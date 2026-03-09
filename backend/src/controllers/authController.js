@@ -38,7 +38,6 @@ export const signup = async (req, res) => {
             password: hashedPassword
         });
 
-        await newUser.save();
 
         //const token = generateToken(newUser._id);
 
@@ -49,7 +48,7 @@ export const signup = async (req, res) => {
             _id: newUser._id,
             fullName: newUser.fullName,
             email: newUser.email,
-            ProfilePic: newUser.ProfilePic,
+            ProfilePic: newUser.profilePic,
         });
     } catch (error) {
         console.error("Error in signup controller: ", error);
