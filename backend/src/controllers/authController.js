@@ -1,16 +1,14 @@
 import User from "../models/User.js";
 import bcrypt from "bcryptjs";
-import jwt from "jsonwebtoken";
-
-const generateToken = (userId) => {
-    return jwt.sign({ id: userId }, process.env.JWT_SECRET, { expiresIn: "30d" });
-};
+import { sendWelcomeEmail } from "../emails/emailHandlers.js";
+import { generateToken } from "../lib/utils.js"; 
+import { ENV } from "../lib/env.js";
+import cloudinary from "../lib/cloudinary.js";
 
 export const signup = async (req, res) => {
     const { fullName, email, password } = req.body;
 
     try {
-        
         if (!fullName || !email || !password) {
             return res.status(400).json({ message: "All fields are required" });
         }
@@ -38,17 +36,15 @@ export const signup = async (req, res) => {
             password: hashedPassword
         });
 
-
-        //const token = generateToken(newUser._id);
-
         const savedUser = await newUser.save();
+
         generateToken(savedUser._id, res);
 
         res.status(201).json({
-            _id: newUser._id,
-            fullName: newUser.fullName,
-            email: newUser.email,
-            ProfilePic: newUser.profilePic,
+            _id: savedUser._id,
+            fullName: savedUser.fullName,
+            email: savedUser.email,
+            ProfilePic: savedUser.profilePic,
         });
     } catch (error) {
         console.error("Error in signup controller: ", error);
@@ -89,5 +85,28 @@ export const login = async (req, res) => {
 export const logout = (_, res) => {
     res.cookie("jwt", "", { maxAge: 0 });
     res.status(200).json({ message: "Logged out successfully!" });
-    
+};
+
+export const updateProfile = async (req, res) => {
+    try {
+        const { profilePic } = req.body;
+        if (!profilePic)
+            return res.status(400).json({ message: "Profile pic is required" });
+
+        const userId = req.user._id;
+
+        const uploadResponse = await cloudinary.uploader.upload(profilePic);
+
+        const updatedUser = await User.findByIdAndUpdate(
+            userId,
+            { profilePic: uploadResponse.secure_url },
+            { new: true }
+        );
+
+        res.status(200).json(updatedUser);
+
+    } catch (error) {
+        console.log("Error in update profile:", error);
+        res.status(500).json({ message: "Internal server error" });
+    }
 };
