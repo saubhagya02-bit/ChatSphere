@@ -7,7 +7,14 @@ export default {
     "./src/**/*.{js,ts,jsx,tsx}",
   ],
   theme: {
-    extend: {},
+    extend: {
+      border: "border 4s linear infinite",
+    },
+    keyframes: {
+      border: {
+        to: { "--border-angle": "360deg" },
+      },
+    },
   },
   plugins: [daisyui],
 }
