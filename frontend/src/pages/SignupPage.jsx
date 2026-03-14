@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { useAuthStore } from "../store/useAuthStore";
 import BorderAnimatedContainer from "../components/BorderAnimatedContainer";
-import { Link } from "react-router-dom";
-import { MessageCircleIcon, MailIcon, UserIcon } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { MessageCircleIcon, MailIcon, UserIcon, LockIcon } from "lucide-react";
+import { LoaderIcon } from "react-hot-toast";
 
 function SignupPage() {
   const [formData, setFormData] = useState({
@@ -10,12 +11,19 @@ function SignupPage() {
     email: "",
     password: "",
   });
+
   const { signup, isSigningUp } = useAuthStore();
+  const navigate = useNavigate();
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    await signup(formData);
 
-    signup(formData);
+    navigate("/login");
+  };
+
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
   return (
@@ -71,7 +79,7 @@ function SignupPage() {
                   <div>
                     <label className="auth-input-label">Password</label>
                     <div className="relative">
-                      <UserIcon className="auth-input-icon" />
+                      <LockIcon className="auth-input-icon" />
 
                       <input
                         type="password"
@@ -85,8 +93,16 @@ function SignupPage() {
                     </div>
                   </div>
 
-                  <button className="auth-btn" type="submit">
-                    Create Account
+                  <button
+                    className="auth-btn"
+                    type="submit"
+                    disabled={isSigningUp}
+                  >
+                    {isSigningUp ? (
+                      <LoaderIcon className="w-full h-5 animate-spin text-center" />
+                    ) : (
+                      "Create Account"
+                    )}
                   </button>
                 </form>
 

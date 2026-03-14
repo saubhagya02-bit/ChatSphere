@@ -5,9 +5,10 @@ import SignupPage from "./pages/SignupPage";
 import { useAuthStore } from "./store/useAuthStore";
 import { useEffect } from "react";
 import { Toaster } from "react-hot-toast";
+import PageLoader from "./components/PageLoader";
 
 function App() {
-  const { checkAuth, authUser } = useAuthStore();
+  const { checkAuth, isCheckingAuth, authUser } = useAuthStore();
 
   useEffect(() => {
     checkAuth();
@@ -15,7 +16,7 @@ function App() {
 
   console.log({ authUser });
 
-  //if (isCheckingAuth) return <PageLoader />;
+  if (isCheckingAuth) return <PageLoader />;
 
   return (
     <div className="min-h-screen bg-[#020617] relative">
@@ -24,10 +25,9 @@ function App() {
       <div className="absolute inset-0 bg-gradient-to-br from-[#2e8b6b]/30 to-transparent" />
 
       <Routes>
-        <Route path="/" element={<SignupPage />} />
-        <Route path="/signup" element={<SignupPage />} />
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/chat" element={<ChatPage />} />
+        <Route path="/" element={authUser ? <ChatPage /> : <Navigate to={"/login"} />} />
+        <Route path="/login" element={!authUser ? <LoginPage /> : <Navigate to={"/"} />} />
+        <Route path="/signup" element={!authUser ? <SignupPage /> : <Navigate to={"/"} />} />
       </Routes>
       <Toaster />
     </div>
