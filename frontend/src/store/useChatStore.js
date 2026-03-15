@@ -1,4 +1,6 @@
 import { create } from "zustand";
+import { axiosInstance } from "../lib/axios";
+import toast from "react-hot-toast";
 
 export const useChatStore = create(( set, get) => ({
     allContacts: [],
@@ -8,7 +10,7 @@ export const useChatStore = create(( set, get) => ({
     selectdUser: null,
     isUsersLoading: false,
     isMessagesLoading: false,
-    isSoundEnabled: localStorage.getItem("isSoundEnabled") === true,
+    isSoundEnabled: JSON.parse(localStorage.getItem("isSoundEnabled")) === true,
 
     toggleSound: () => {
         localStorage.setItem("isSoundEnabled", !get().isSoundEnabled)
@@ -29,7 +31,7 @@ export const useChatStore = create(( set, get) => ({
             set({ isUsersLoading: false });
         }
     },
-    getMyChatPartners: async() => {
+    getMyChatPartner: async() => {
         set({ isUsersLoading: true });
         try{
             const res = await axiosInstance.get("/messages/chats");
