@@ -1,31 +1,23 @@
-import { useEffect } from "react";
 import { useChatStore } from "../store/useChatStore";
 import UsersLoadingSkeleton from "./UsersLoadingSkeleton";
 
 function ContactList() {
-  const { getAllContacts, allContacts, setSelectedUser, isUsersLoading } =
-      useChatStore();
-  
-    useEffect(() => {
-      getAllContacts();
-    }, [getAllContacts]);
-  
-    if (isUsersLoading) return <UsersLoadingSkeleton />;
-    
+  const { allContacts, setSelectedUser, isUsersLoading } = useChatStore();
+
+  if (isUsersLoading) return <UsersLoadingSkeleton />;
+
   return (
     <>
       {allContacts.map((contact) => (
         <div
           key={contact._id}
-          className="bg-cyan-500/10 p-4 rounded-lg cursor-poiner hover:bg-cyan-500/20 transition-colors"
+          className="bg-emerald-500/10 p-4 rounded-lg cursor-pointer hover:bg-emerald-500/20 transition-all duration-200 border border-transparent hover:border-emerald-500/30"
           onClick={() => setSelectedUser(contact)}
         >
           <div className="flex items-center gap-3">
-            <div className={`avatar online`}>
-              <div className="size-12 rounded-full">
-                <img
-                  src={contact.profilePic || "/profile.png"}
-                />
+            <div className={"avatar"}>
+              <div className="size-12 rounded-full ring ring-emerald-500/20">
+                <img src={contact.profilePic || "/profile.png"} />
               </div>
             </div>
             <h4 className="text-slate-200 font-medium truncate">
@@ -35,7 +27,7 @@ function ContactList() {
         </div>
       ))}
     </>
-  )
+  );
 }
 
-export default ContactList
+export default ContactList;

@@ -6,9 +6,18 @@ import ChatList from "../components/ChatList";
 import ContactList from "../components/ContactList";
 import ChatContainer from "../components/ChatContainer";
 import NoConversationPlaceholder from "../components/NoConversationPlaceholder";
+import { useEffect } from "react";
 
 function ChatPage() {
-  const { activeTab, selectedUser } = useChatStore();
+  const { activeTab, selectedUser, getAllContacts, getMyChatPartner  } = useChatStore();
+
+  useEffect(() => {
+    if (activeTab === "chats"){
+      getMyChatPartner();
+    } else {
+      getAllContacts();
+    }
+  }, [activeTab, getAllContacts, getMyChatPartner]);
 
   return (
     <div className="relative w-full max-w-6xl h-[800px] mx-auto">
