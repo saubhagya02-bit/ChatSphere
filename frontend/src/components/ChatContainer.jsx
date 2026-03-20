@@ -8,14 +8,16 @@ import NoChatHistoryPlaceholder from "./NoChatHistoryPlaceholder";
 import { formatMessageTime } from "../lib/utils";
 
 function ChatContainer() {
-  const { selectedUser, getMessagesByUserId, messages, isMessagesLoading } =
+  const { selectedUser, getMessagesByUserId, messages, isMessagesLoading, subscribeToMessage, unsubscribeFromMessage, } =
     useChatStore();
   const { authUser } = useAuthStore();
   const messageEndRef = useRef(null);
 
   useEffect(() => {
     getMessagesByUserId(selectedUser._id);
-  }, [selectedUser, getMessagesByUserId]);
+    subscribeToMessage();
+    return () => unsubscribeFromMessage();
+  }, [selectedUser, getMessagesByUserId, subscribeToMessage, unsubscribeFromMessage]);
 
   useEffect(() => {
     if (messageEndRef.current) {
