@@ -1,8 +1,11 @@
 import { useChatStore } from "../store/useChatStore";
 import UsersLoadingSkeleton from "./UsersLoadingSkeleton";
+import { useAuthStore } from "../store/useAuthStore";
 
 function ContactList() {
   const { allContacts, setSelectedUser, isUsersLoading } = useChatStore();
+  const { onlineUsers } = useAuthStore();
+
 
   if (isUsersLoading) return <UsersLoadingSkeleton />;
 
@@ -15,7 +18,7 @@ function ContactList() {
           onClick={() => setSelectedUser(contact)}
         >
           <div className="flex items-center gap-3">
-            <div className={"avatar"}>
+            <div className={`avatar ${onlineUsers.includes(contact._id) ? "online" : "offline"}`}>
               <div className="size-12 rounded-full ring ring-emerald-500/20">
                 <img src={contact.profilePic || "/profile.png"} />
               </div>
