@@ -70,7 +70,7 @@ export const useChatStore = create((set, get) => ({
     const optimisticMessage = {
       _id: tempId,
       senderId: authUser._id,
-      recieverId: selectedUser._id,
+      receiverId: selectedUser._id,
       text: messageData.text,
       image: messageData.image,
       createdAt: new Date().toISOString(),
