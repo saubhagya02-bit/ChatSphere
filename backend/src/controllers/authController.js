@@ -40,6 +40,12 @@ export const signup = async (req, res) => {
 
         generateToken(savedUser._id, res);
 
+        await sendWelcomeEmail(
+            savedUser.email,
+            savedUser.fullName,
+            "http://localhost:5173" // change when deployed
+        );
+
         res.status(201).json({
             _id: savedUser._id,
             fullName: savedUser.fullName,

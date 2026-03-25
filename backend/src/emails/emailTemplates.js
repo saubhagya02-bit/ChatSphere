@@ -1,4 +1,4 @@
-export const createWelcomeEmailTemplate = (user, clientURL) => {
+export const createWelcomeEmailTemplate = ({ fullName, clientURL }) => {
   return `
   <html>
   <body style="
@@ -36,7 +36,7 @@ export const createWelcomeEmailTemplate = (user, clientURL) => {
                 color:#333;
                 margin-bottom:10px;
               ">
-                Hello <strong>${user.fullName}</strong>,
+                Hello <strong>${fullName}</strong>,
               </p>
 
               <p style="
@@ -50,6 +50,7 @@ export const createWelcomeEmailTemplate = (user, clientURL) => {
               </p>
 
               <a href="${clientURL}" 
+                target="_blank"
                 style="
                   display:inline-block;
                   padding:14px 28px;
