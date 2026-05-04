@@ -3,11 +3,10 @@ import { LogOutIcon, VolumeOffIcon, Volume2Icon } from "lucide-react";
 import { useAuthStore } from "../store/useAuthStore";
 import { useChatStore } from "../store/useChatStore";
 
-const mouseClickSound = new Audio("/sounds/mouseClick.mp3");
-
 function ProfileHeader() {
   const { logout, authUser, uploadProfile } = useAuthStore();
   const { isSoundEnabled, toggleSound } = useChatStore();
+  const { playClick } = useKeyboardSound();
   const [selectedImg, setSelectedImg] = useState(null);
 
   const fileInputRef = useRef(null);
@@ -74,10 +73,7 @@ function ProfileHeader() {
           <button
             className="text-slate-400 hover:text-slate-200 transition-colors"
             onClick={() => {
-              mouseClickSound.currentTime = 0;
-              mouseClickSound
-                .play()
-                .catch((error) => console.log("Audio play failed: ", error));
+              playClick();
               toggleSound();
             }}
           >
