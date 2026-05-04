@@ -7,6 +7,7 @@ msgReceiveSound.preload = "auto";
 msgSentSound.preload = "auto";
 
 function useKeyboardSound() {
+  const { isSoundEnabled } = useChatStore();
   const playClick = () => {
     clickSound.currentTime = 0;
     clickSound.play().catch(() => {});
