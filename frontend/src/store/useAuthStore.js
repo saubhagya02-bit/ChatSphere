@@ -33,12 +33,14 @@ export const useAuthStore = create((set, get) => ({
     set({ isSigningUp: true });
 
     try {
-      await axiosInstance.post("/auth/signup", data);
-      toast.success("Account created! Please login.");
-
+      const res = await axiosInstance.post("/auth/signup", data);
+      set({ authUser: res.data });
+      toast.success("Account created successfully!");
       get().connectSocket();
+      return true;
     } catch (error) {
       toast.error(error.response?.data?.message || "Signup failed");
+      return false;
     } finally {
       set({ isSigningUp: false });
     }
@@ -47,20 +49,24 @@ export const useAuthStore = create((set, get) => ({
   login: async (data) => {
     set({ isLoggingIn: true });
 
-   try {
-  const res = await axiosInstance.post("/auth/login", data);
-  set({ authUser: res.data });
-  toast.success("Logged in successfully!");
+    try {
+      const res = await axiosInstance.post("/auth/login", data);
+      set({ authUser: res.data });
+      toast.success("Logged in successfully!");
 
-  try {
-    get().connectSocket();
-  } catch (socketErr) {
-    console.error("Socket connection failed, but user is logged in", socketErr);
-  }
-
-} catch (error) {
-  toast.error(error.response?.data?.message || "Login failed");
-}
+      try {
+        get().connectSocket();
+      } catch (socketErr) {
+        console.error(
+          "Socket connection failed, but user is logged in",
+          socketErr,
+        );
+      }
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Login failed");
+    } finally {
+      set({ isLoggingIn: false });
+    }
   },
 
   logout: async () => {
@@ -71,7 +77,7 @@ export const useAuthStore = create((set, get) => ({
 
       toast.success("Logged out successfully!");
 
-       get().disconnectSocket()
+      get().disconnectSocket();
     } catch (error) {
       console.log("Logout error:", error.response?.data || error.message);
     }
