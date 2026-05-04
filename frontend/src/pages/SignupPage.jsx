@@ -2,8 +2,13 @@ import { useState } from "react";
 import { useAuthStore } from "../store/useAuthStore";
 import BorderAnimatedContainer from "../components/BorderAnimatedContainer";
 import { Link, useNavigate } from "react-router-dom";
-import { MessageCircleIcon, MailIcon, UserIcon, LockIcon } from "lucide-react";
-import { LoaderIcon } from "react-hot-toast";
+import {
+  MessageCircleIcon,
+  MailIcon,
+  UserIcon,
+  LockIcon,
+  LoaderIcon,
+} from "lucide-react";
 
 function SignupPage() {
   const [formData, setFormData] = useState({
@@ -17,18 +22,13 @@ function SignupPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    await signup(formData);
-
-    navigate("/login");
-  };
-
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const success = await signup(formData);
+    if (success) navigate("/login");
   };
 
   return (
     <div className="w-full flex items-center justify-center p-4 bg-slate-900">
-      <div className="relative w-full max-w-6xl md:h[800px] h-[650px]">
+      <div className="relative w-full max-w-6xl md:h-[800px] h-[650px]">
         <BorderAnimatedContainer>
           <div className="w-full flex flex-col md:flex-row">
             <div className="md:w-1/2 p-8 flex items-center justify-center-center md:border-r border-slate-600/30">
@@ -114,7 +114,7 @@ function SignupPage() {
               </div>
             </div>
 
-            <div className="hidden md:flex md:w-1/2 flex items-center justify-center bg-gradient-to-bl from-slate-800/20 to-transparent">
+            <div className="hidden md:flex md:w-1/2 items-center justify-center bg-gradient-to-bl from-slate-800/20 to-transparent">
               <div>
                 <img
                   src="/signup.png"
