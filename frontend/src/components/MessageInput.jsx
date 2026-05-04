@@ -25,6 +25,8 @@ function MessageInput() {
       image: imagePreview,
     });
 
+    playMessageSent();
+
     setText("");
     setImagePreview(null);
 
@@ -76,13 +78,27 @@ function MessageInput() {
         onSubmit={handleSendMessage}
         className="max-w-3xl mx-auto flex space-x-4"
       >
-        <input
-          type="text"
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          className="flex-1 bg-slate-800/50 border border-slate-700/50 rounded-lg py-2 px-4"
-          placeholder="Type your message..."
-        />
+        <div className="flex-1 relative">
+          <input
+            type="text"
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            className="flex-1 bg-slate-800/50 border border-slate-700/50 rounded-lg py-2 px-4"
+            placeholder="Type your message..."
+          />
+
+          {text.length > 150 && (
+            <span
+              className={`absolute right-3 top-1/2 -translate-y-1/2 text-xs ${
+                text.length >= MAX_TEXT_LENGTH
+                  ? "text-red-400"
+                  : "text-slate-500"
+              }`}
+            >
+              {text.length}/{MAX_TEXT_LENGTH}
+            </span>
+          )}
+        </div>
 
         <button
           type="submit"
