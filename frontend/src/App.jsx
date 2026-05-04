@@ -14,8 +14,6 @@ function App() {
     checkAuth();
   }, [checkAuth]);
 
-  console.log({ authUser });
-
   if (isCheckingAuth) return <PageLoader />;
 
   return (
@@ -25,9 +23,18 @@ function App() {
       <div className="absolute inset-0 bg-gradient-to-br from-[#2e8b6b]/30 to-transparent" />
 
       <Routes>
-        <Route path="/" element={authUser ? <ChatPage /> : <Navigate to={"/login"} />} />
-        <Route path="/login" element={!authUser ? <LoginPage /> : <Navigate to={"/"} />} />
-        <Route path="/signup" element={!authUser ? <SignupPage /> : <Navigate to={"/"} />} />
+        <Route
+          path="/"
+          element={authUser ? <ChatPage /> : <Navigate to={"/login"} />}
+        />
+        <Route
+          path="/login"
+          element={!authUser ? <LoginPage /> : <Navigate to={"/"} />}
+        />
+        <Route
+          path="/signup"
+          element={!authUser ? <SignupPage /> : <Navigate to={"/"} />}
+        />
       </Routes>
       <Toaster />
     </div>
