@@ -8,8 +8,14 @@ import NoChatHistoryPlaceholder from "./NoChatHistoryPlaceholder";
 import { formatMessageTime } from "../lib/utils";
 
 function ChatContainer() {
-  const { selectedUser, getMessagesByUserId, messages, isMessagesLoading, subscribeToMessage, unsubscribeFromMessage, } =
-    useChatStore();
+  const {
+    selectedUser,
+    getMessagesByUserId,
+    messages,
+    isMessagesLoading,
+    subscribeToMessage,
+    unsubscribeFromMessage,
+  } = useChatStore();
   const { authUser } = useAuthStore();
   const messageEndRef = useRef(null);
 
@@ -17,7 +23,12 @@ function ChatContainer() {
     getMessagesByUserId(selectedUser._id);
     subscribeToMessage();
     return () => unsubscribeFromMessage();
-  }, [selectedUser, getMessagesByUserId, subscribeToMessage, unsubscribeFromMessage]);
+  }, [
+    selectedUser,
+    getMessagesByUserId,
+    subscribeToMessage,
+    unsubscribeFromMessage,
+  ]);
 
   useEffect(() => {
     if (messageEndRef.current) {
@@ -36,7 +47,9 @@ function ChatContainer() {
               <div
                 key={msg._id}
                 className={`chat ${
-                  msg.senderId === authUser._id ? "chat-end" : "chat-start"
+                  msg.senderId.toString() === authUser._id.toString()
+                    ? "chat-end"
+                    : "chat-start"
                 }`}
               >
                 <div
