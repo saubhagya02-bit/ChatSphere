@@ -1,131 +1,226 @@
+import { useState, useRef } from "react";
 import { useChatStore } from "../store/useChatStore";
-import { useRef, useState } from "react";
 import useKeyboardSound from "../hooks/useKeyboardSound";
 import toast from "react-hot-toast";
-import { SendHorizontal, ImagePlus, XIcon } from "lucide-react";
+
+const MAX = 200;
 
 function MessageInput() {
   const [text, setText] = useState("");
-  const [imagePreview, setImagePreview] = useState(null);
-
-  const fileInputRef = useRef(null);
-
+  const [img, setImg] = useState(null);
+  const fileRef = useRef(null);
   const { sendMessage } = useChatStore();
   const { playClick, playMessageSent } = useKeyboardSound();
 
-  const handleSendMessage = (e) => {
-    e.preventDefault();
-
-    if (!text.trim() && !imagePreview) return;
-
+  const handleSend = async (e) => {
+    e?.preventDefault();
+    if (!text.trim() && !img) return;
     playClick();
-
-    sendMessage({
-      text: text.trim(),
-      image: imagePreview,
-    });
-
+    await sendMessage({ text: text.trim(), image: img });
     playMessageSent();
-
     setText("");
-    setImagePreview(null);
-
-    if (fileInputRef.current) fileInputRef.current.value = "";
+    setImg(null);
+    if (fileRef.current) fileRef.current.value = "";
   };
 
-  const handleImageChange = (e) => {
+  const handleKey = (e) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleSend();
+    }
+  };
+
+  const handleFile = (e) => {
     const file = e.target.files[0];
     if (!file) return;
-
     if (!file.type.startsWith("image/")) {
-      toast.error("Please select an image file");
+      toast.error("Images only");
       return;
     }
-
     const reader = new FileReader();
-    reader.onloadend = () => setImagePreview(reader.result);
+    reader.onloadend = () => setImg(reader.result);
     reader.readAsDataURL(file);
   };
 
-  const removeImage = () => {
-    setImagePreview(null);
-    if (fileInputRef.current) fileInputRef.current.value = "";
-  };
+  const near = text.length > 150;
+  const over = text.length >= MAX;
 
   return (
-    <div className="p-4 border-t border-slate-700/50">
-      {imagePreview && (
-        <div className="max-w-3xl mx-auto mb-3 flex items-center">
-          <div className="relative">
+    <div
+      style={{
+        padding: "14px 16px",
+        borderTop: "1px solid var(--border)",
+        background: "var(--bg2)",
+        flexShrink: 0,
+      }}
+    >
+      {/* Image preview */}
+      {img && (
+        <div style={{ marginBottom: "10px", display: "flex" }}>
+          <div style={{ position: "relative", display: "inline-block" }}>
             <img
-              src={imagePreview}
+              src={img}
               alt="Preview"
-              className="w-20 h-20 object-cover rounded-lg border border-slate-700"
+              style={{
+                width: "72px",
+                height: "72px",
+                objectFit: "cover",
+                borderRadius: "10px",
+                border: "1px solid var(--border)",
+                display: "block",
+              }}
             />
-
             <button
-              onClick={removeImage}
-              type="button"
-              className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-slate-800 flex items-center justify-center text-slate-200 hover:bg-slate-700"
+              onClick={() => {
+                setImg(null);
+                if (fileRef.current) fileRef.current.value = "";
+              }}
+              style={{
+                position: "absolute",
+                top: "-8px",
+                right: "-8px",
+                width: "22px",
+                height: "22px",
+                borderRadius: "50%",
+                background: "var(--bg4)",
+                border: "1px solid var(--border)",
+                color: "var(--text1)",
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: "12px",
+              }}
             >
-              <XIcon className="w-4 h-4" />
+              ✕
             </button>
           </div>
         </div>
       )}
 
-      <form
-        onSubmit={handleSendMessage}
-        className="max-w-3xl mx-auto flex space-x-4"
+      {/* Input row */}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: "8px",
+          background: "var(--bg3)",
+          borderRadius: "14px",
+          border: "1px solid var(--border)",
+          padding: "6px 6px 6px 14px",
+        }}
       >
-        <div className="flex-1 relative">
+        {/* Attach */}
+        <button
+          type="button"
+          onClick={() => fileRef.current?.click()}
+          style={{
+            background: "transparent",
+            border: "none",
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "4px",
+            flexShrink: 0,
+          }}
+        >
+          <svg
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke={img ? "var(--accent)" : "var(--text2)"}
+            strokeWidth="1.8"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <rect x="3" y="3" width="18" height="18" rx="2" />
+            <circle cx="8.5" cy="8.5" r="1.5" />
+            <polyline points="21 15 16 10 5 21" />
+          </svg>
+        </button>
+
+        {/* Text input */}
+        <div style={{ flex: 1, position: "relative" }}>
           <input
-            type="text"
             value={text}
             onChange={(e) => setText(e.target.value)}
-            className="flex-1 bg-slate-800/50 border border-slate-700/50 rounded-lg py-2 px-4"
-            placeholder="Type your message..."
+            onKeyDown={handleKey}
+            maxLength={MAX}
+            placeholder="Type a message…"
+            style={{
+              width: "100%",
+              background: "transparent",
+              border: "none",
+              fontSize: "14px",
+              color: "var(--text1)",
+              outline: "none",
+              fontFamily: "'DM Sans', sans-serif",
+              paddingRight: near ? "44px" : "0",
+            }}
           />
-
-          {text.length > 150 && (
+          {near && (
             <span
-              className={`absolute right-3 top-1/2 -translate-y-1/2 text-xs ${
-                text.length >= MAX_TEXT_LENGTH
-                  ? "text-red-400"
-                  : "text-slate-500"
-              }`}
+              style={{
+                position: "absolute",
+                right: 0,
+                top: "50%",
+                transform: "translateY(-50%)",
+                fontSize: "11px",
+                color: over ? "var(--red)" : "var(--text3)",
+              }}
             >
-              {text.length}/{MAX_TEXT_LENGTH}
+              {text.length}/{MAX}
             </span>
           )}
         </div>
 
+        {/* Send */}
         <button
-          type="submit"
-          disabled={!text.trim() && !imagePreview}
-          className="bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-800 disabled:text-slate-600 text-white p-3 rounded-xl transition-all active:scale-95"
+          onClick={handleSend}
+          disabled={!text.trim() && !img}
+          style={{
+            width: "38px",
+            height: "38px",
+            borderRadius: "12px",
+            background: !text.trim() && !img ? "var(--bg4)" : "var(--accent)",
+            border: "none",
+            cursor: !text.trim() && !img ? "not-allowed" : "pointer",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            flexShrink: 0,
+            transition: "all .2s",
+          }}
+          onMouseEnter={(e) => {
+            if (text.trim() || img)
+              e.currentTarget.style.background = "var(--accent2)";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background =
+              text.trim() || img ? "var(--accent)" : "var(--bg4)";
+          }}
         >
-          <SendHorizontal className="w-5 h-5" />
+          <svg
+            width="17"
+            height="17"
+            viewBox="0 0 24 24"
+            fill={!text.trim() && !img ? "var(--text3)" : "#000"}
+          >
+            <path d="M22 2L11 13" />
+            <path d="M22 2L15 22 11 13 2 9l20-7z" />
+          </svg>
         </button>
+      </div>
 
-        <input
-          type="file"
-          accept="image/*"
-          ref={fileInputRef}
-          onChange={handleImageChange}
-          className="hidden"
-        />
-
-        <button
-          type="button"
-          onClick={() => fileInputRef.current?.click()}
-          className={`bg-slate-800/50 text-slate-400 hover:text-slate-200 rounded-lg px-4 transition-colors ${
-            imagePreview ? "text-cyan-500" : ""
-          }`}
-        >
-          <ImagePlus className="w-5 h-5" />
-        </button>
-      </form>
+      <input
+        ref={fileRef}
+        type="file"
+        accept="image/*"
+        onChange={handleFile}
+        style={{ display: "none" }}
+      />
     </div>
   );
 }
