@@ -7,38 +7,39 @@ import ContactList from "../components/ContactList";
 import ChatContainer from "../components/ChatContainer";
 import NoConversationPlaceholder from "../components/NoConversationPlaceholder";
 import { useEffect } from "react";
+import Sidebar from "../components/Sidebar"; 
 
 function ChatPage() {
-  const { activeTab, selectedUser, getAllContacts, getMyChatPartner  } = useChatStore();
+  const { selectedUser, activeTab, getAllContacts, getMyChatPartner } =
+    useChatStore();
 
   useEffect(() => {
-    if (activeTab === "chats"){
-      getMyChatPartner();
-    } else {
-      getAllContacts();
-    }
+    if (activeTab === "chats") getMyChatPartner();
+    else getAllContacts();
   }, [activeTab, getAllContacts, getMyChatPartner]);
 
   return (
-    <div className="relative w-full max-w-6xl h-[800px] mx-auto">
-      <BorderAnimatedContainer>
-        <div className="flex w-full h-full">
+    <div
+      style={{
+        display: "flex",
+        height: "100vh",
+        background: "var(--bg)",
+        overflow: "hidden",
+      }}
+    >
+      <Sidebar />
 
-          <div className="w-80 bg-emerald-950/40 backdrop-blur-md border-r border-emerald-500/20 flex flex-col">
-            <ProfileHeader />
-            <ActiveTabSwitch />
-
-            <div className="flex-1 overflow-y-auto p-4 space-y-2">
-              {activeTab === "chats" ? <ChatList /> : <ContactList />}
-            </div>
-          </div>
-
-          <div className="flex-1 flex flex-col bg-slate-900/70 backdrop-blur-md">
-            {selectedUser ? <ChatContainer /> : <NoConversationPlaceholder />}
-          </div>
-
-        </div>
-      </BorderAnimatedContainer>
+      <main
+        style={{
+          flex: 1,
+          display: "flex",
+          flexDirection: "column",
+          minWidth: 0,
+          background: "var(--bg2)",
+        }}
+      >
+        {selectedUser ? <ChatContainer /> : <NoConversationPlaceholder />}
+      </main>
     </div>
   );
 }
