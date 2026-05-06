@@ -1,31 +1,24 @@
 import { useChatStore } from "../store/useChatStore";
 
-const clickSound = new Audio("/sounds/mouseClick.mp3");
-const msgReceiveSound = new Audio("/sounds/msgSound.mp3");
-const msgSentSound = new Audio("/sounds/msgSentSound.mp3");
-
-clickSound.preload = "auto";
-msgReceiveSound.preload = "auto";
-msgSentSound.preload = "auto";
+const clickSnd = new Audio("/sounds/mouseClick.mp3");
+const sentSnd = new Audio("/sounds/msgSentSound.mp3");
+const recvSnd = new Audio("/sounds/msgSound.mp3");
+clickSnd.preload = sentSnd.preload = recvSnd.preload = "auto";
 
 function useKeyboardSound() {
   const { isSoundEnabled } = useChatStore();
-  const playClick = () => {
-    clickSound.currentTime = 0;
-    clickSound.play().catch(() => {});
+
+  const play = (snd) => {
+    if (!isSoundEnabled) return;
+    snd.currentTime = 0;
+    snd.play().catch(() => {});
   };
 
-  const playMessageReceive = () => {
-    msgReceiveSound.currentTime = 0;
-    msgReceiveSound.play().catch(() => {});
+  return {
+    playClick: () => play(clickSnd),
+    playMessageSent: () => play(sentSnd),
+    playMessageReceive: () => play(recvSnd),
   };
-
-  const playMessageSent = () => {
-    msgSentSound.currentTime = 0;
-    msgSentSound.play().catch(() => {});
-  };
-
-  return { playClick, playMessageReceive, playMessageSent };
 }
 
 export default useKeyboardSound;
