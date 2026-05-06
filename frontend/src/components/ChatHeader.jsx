@@ -1,46 +1,71 @@
-import { useChatStore } from "../store/useChatStore";
-import { XIcon } from "lucide-react";
 import { useEffect } from "react";
+import { useChatStore } from "../store/useChatStore";
 import { useAuthStore } from "../store/useAuthStore";
+import Avatar from "./Avatar";
 
 function ChatHeader() {
   const { selectedUser, setSelectedUser } = useChatStore();
   const { onlineUsers } = useAuthStore();
-  const isOnline = onlineUsers.includes(selectedUser._id);
+  const isOnline = onlineUsers.includes(selectedUser?._id);
 
   useEffect(() => {
-    const handleEscKey = (event) => {
-      if (event.key === "Escape") setSelectedUser(null);
+    const onKey = (e) => {
+      if (e.key === "Escape") setSelectedUser(null);
     };
-
-    window.addEventListener("keydown", handleEscKey);
-
-    return () => window.removeEventListener("keydown", handleEscKey);
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
   }, [setSelectedUser]);
 
   return (
-    <div className="flex justify-between items-center bg-emerald-950/40 backdrop-blur-md border-b border-emerald-500/20 max-h-[84px] px-6">
-      <div className="flex items-center space-x-3">
-        <div className={`avatar ${isOnline ? "online" : "offline"}`}>
-          <div className="w-12 rounded-full ">
-            <img
-              src={selectedUser.profilePic || "/profile.png"}
-              alt={selectedUser.fullName}
-            />
-          </div>
-        </div>
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: "12px",
+        padding: "14px 20px",
+        borderBottom: "1px solid var(--border)",
+        background: "var(--bg2)",
+        flexShrink: 0,
+      }}
+    >
+      <Avatar
+        name={selectedUser?.fullName}
+        src={selectedUser?.profilePic}
+        size={40}
+        showDot
+        isOnline={isOnline}
+      />
 
-        <div>
-          <h3 className="text-slate-200 font-medium">
-            {selectedUser.fullName}
-          </h3>
-          <p className="text-slate-400 text-xs opacity-80">{isOnline ? "online" : "offline"}</p>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div
+          style={{ fontSize: "15px", fontWeight: 600, color: "var(--text1)" }}
+        >
+          {selectedUser?.fullName}
+        </div>
+        <div
+          style={{
+            fontSize: "12px",
+            color: isOnline ? "var(--online)" : "var(--text3)",
+            marginTop: "1px",
+          }}
+        >
+          {isOnline ? "● Online now" : "Offline"}
         </div>
       </div>
 
-      <button onClick={() => setSelectedUser(null)}>
-        <XIcon className="w-5 h-5 text-slate-400 hover:text-slate-200 transition-colors cursor-pointer" />
-      </button>
+      {/* Action buttons */}
+      <div style={{ display: "flex", gap: "4px" }}>
+        <button
+          className="icon-btn"
+          title="Close (Esc)"
+          onClick={() => setSelectedUser(null)}
+        >
+          <svg viewBox="0 0 24 24">
+            <line x1="18" y1="6" x2="6" y2="18" />
+            <line x1="6" y1="6" x2="18" y2="18" />
+          </svg>
+        </button>
+      </div>
     </div>
   );
 }
