@@ -1,3 +1,5 @@
+import { useChatStore } from "../store/useChatStore";
+
 const clickSound = new Audio("/sounds/mouseClick.mp3");
 const msgReceiveSound = new Audio("/sounds/msgSound.mp3");
 const msgSentSound = new Audio("/sounds/msgSentSound.mp3");
