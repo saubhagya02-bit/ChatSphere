@@ -5,7 +5,6 @@ import {
   sendMessage,
   getChatPartners,
 } from "../controllers/messageController.js";
-
 import { protectRoute } from "../middleware/authMiddleware.js";
 import { arcjetProtection } from "../middleware/arcjetMiddleware.js";
 
