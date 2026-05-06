@@ -1,114 +1,340 @@
 import { useState } from "react";
-import { useAuthStore } from "../store/useAuthStore";
-import BorderAnimatedContainer from "../components/BorderAnimatedContainer";
 import { Link } from "react-router-dom";
-import {
-  MessageCircleIcon,
-  MailIcon,
-  LockIcon,
-  LoaderIcon,
-} from "lucide-react";
+import { useAuthStore } from "../store/useAuthStore";
 
 function LoginPage() {
-  const [formData, setFormData] = useState({
-    email: "",
-    password: "",
-  });
-
+  const [form, setForm] = useState({ email: "", password: "" });
   const { login, isLoggingIn } = useAuthStore();
+  const set = (k) => (e) => setForm((p) => ({ ...p, [k]: e.target.value }));
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    login(formData);
+    login(form);
   };
 
   return (
-    <div className="w-full flex items-center justify-center p-4 bg-slate-900">
-      <div className="relative w-full max-w-6xl md:h-[800px] h-[650px]">
-        <BorderAnimatedContainer>
-          <div className="w-full flex flex-col md:flex-row">
-            <div className="md:w-1/2 p-8 flex items-center justify-center md:border-r border-slate-600/30">
-              <div className="w-full max-w-md">
-                <div className="text-center mb-8">
-                  <MessageCircleIcon className="w-12 h-12 mx-auto text-slate-400 mb-4" />
-                  <h2 className="text-2xl font-bold text-slate-200 mb-2">
-                    Welcome Back
-                  </h2>
-                  <p className="text-slate-400">Login to access your account</p>
-                </div>
+    <div
+      style={{
+        minHeight: "100vh",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        background: "var(--bg)",
+        padding: "24px",
+      }}
+    >
+      <div
+        style={{
+          width: "100%",
+          maxWidth: "920px",
+          display: "flex",
+          borderRadius: "20px",
+          overflow: "hidden",
+          border: "1px solid var(--border)",
+          minHeight: "560px",
+        }}
+      >
+        {/* Left: form */}
+        <div
+          style={{
+            flex: "0 0 420px",
+            background: "var(--sidebar)",
+            padding: "52px 44px",
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "center",
+            position: "relative",
+            overflow: "hidden",
+          }}
+        >
+          <div
+            style={{
+              position: "absolute",
+              top: "-80px",
+              left: "-80px",
+              width: "280px",
+              height: "280px",
+              background:
+                "radial-gradient(circle, rgba(0,229,160,0.07) 0%, transparent 70%)",
+              pointerEvents: "none",
+            }}
+          />
 
-                <form onSubmit={handleSubmit} className="space-y-6">
-                  <div>
-                    <label className="auth-input-label">Email</label>
-                    <div className="relative">
-                      <MailIcon className="auth-input-icon" />
-                      <input
-                        type="email"
-                        value={formData.email}
-                        onChange={(e) =>
-                          setFormData({ ...formData, email: e.target.value })
-                        }
-                        className="input"
-                        placeholder="Your Email"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="auth-input-label">Password</label>
-                    <div className="relative">
-                      <LockIcon className="auth-input-icon" />
-                      <input
-                        type="password"
-                        value={formData.password}
-                        onChange={(e) =>
-                          setFormData({ ...formData, password: e.target.value })
-                        }
-                        className="input"
-                        placeholder="Enter your password"
-                      />
-                    </div>
-                  </div>
-
-                  <button
-                    className="auth-btn"
-                    type="submit"
-                    disabled={isLoggingIn}
-                  >
-                    {isLoggingIn ? (
-                      <LoaderIcon className="w-5 h-5 animate-spin mx-auto" />
-                    ) : (
-                      "Sign In"
-                    )}
-                  </button>
-                </form>
-
-                <div className="mt-6 text-center">
-                  <Link to="/signup" className="auth-link">
-                    Don't have an account? Sign Up
-                  </Link>
-                </div>
-              </div>
-            </div>
-
-            <div className="hidden md:flex md:w-1/2 items-center justify-center bg-gradient-to-bl from-slate-800/20 to-transparent">
-              <div>
-                <img
-                  src="/login.png"
-                  alt="Connect with your friends"
-                  className="w-full h-auto object-contain"
+          {/* Logo */}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "10px",
+              marginBottom: "36px",
+            }}
+          >
+            <div
+              style={{
+                width: "40px",
+                height: "40px",
+                borderRadius: "12px",
+                background: "var(--accent)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <svg width="22" height="22" viewBox="0 0 28 28" fill="none">
+                <path
+                  d="M4 14C4 8.477 8.477 4 14 4s10 4.477 10 10-4.477 10-10 10a9.97 9.97 0 01-5.5-1.65L4 24l1.65-4.5A9.97 9.97 0 014 14z"
+                  stroke="#000"
+                  strokeWidth="2"
+                  strokeLinejoin="round"
                 />
-                <div className="mt-6 text-center">
-                  <h3 className="mt-6 text-xl font-medium text-green-400">
-                    Connect anywhere, anytime
-                  </h3>
-                </div>
-              </div>
+                <path
+                  d="M10 13h8M10 17h5"
+                  stroke="#000"
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                />
+              </svg>
             </div>
+            <span
+              style={{
+                fontSize: "17px",
+                fontWeight: 600,
+                color: "var(--text1)",
+                letterSpacing: "-.01em",
+              }}
+            >
+              ChatSphere
+            </span>
           </div>
-        </BorderAnimatedContainer>
+
+          <h1
+            style={{
+              fontSize: "24px",
+              fontWeight: 600,
+              color: "var(--text1)",
+              marginBottom: "6px",
+            }}
+          >
+            Welcome back
+          </h1>
+          <p
+            style={{
+              fontSize: "14px",
+              color: "var(--text2)",
+              marginBottom: "32px",
+            }}
+          >
+            Sign in to continue your conversations
+          </p>
+
+          <form onSubmit={handleSubmit}>
+            <div className="field">
+              <label>Email</label>
+              <input
+                type="email"
+                placeholder="you@example.com"
+                value={form.email}
+                onChange={set("email")}
+                required
+              />
+            </div>
+            <div className="field">
+              <label>Password</label>
+              <input
+                type="password"
+                placeholder="••••••••"
+                value={form.password}
+                onChange={set("password")}
+                required
+              />
+            </div>
+            <button
+              className="auth-btn"
+              type="submit"
+              disabled={isLoggingIn}
+              style={{ marginTop: "8px" }}
+            >
+              {isLoggingIn ? (
+                <>
+                  <Spinner /> Signing in…
+                </>
+              ) : (
+                "Sign in"
+              )}
+            </button>
+          </form>
+
+          <p
+            style={{
+              marginTop: "24px",
+              fontSize: "13px",
+              color: "var(--text2)",
+              textAlign: "center",
+            }}
+          >
+            No account?{" "}
+            <Link
+              to="/signup"
+              style={{
+                color: "var(--accent)",
+                textDecoration: "none",
+                fontWeight: 500,
+              }}
+            >
+              Sign up free
+            </Link>
+          </p>
+        </div>
+
+        {/* Right: preview */}
+        <div
+          style={{
+            flex: 1,
+            background:
+              "linear-gradient(135deg, var(--bg) 0%, var(--bg2) 100%)",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "40px",
+          }}
+        >
+          <ChatPreview />
+          <div style={{ marginTop: "28px", textAlign: "center" }}>
+            <h3
+              style={{
+                fontSize: "19px",
+                fontWeight: 600,
+                color: "var(--text1)",
+                marginBottom: "6px",
+              }}
+            >
+              Real conversations, refined
+            </h3>
+            <p style={{ fontSize: "13px", color: "var(--text2)" }}>
+              End-to-end encrypted · Real-time · Always there
+            </p>
+          </div>
+        </div>
       </div>
     </div>
+  );
+}
+
+function ChatPreview() {
+  const msgs = [
+    {
+      id: 1,
+      from: "S",
+      text: "Hey! Are you free this evening? 👋",
+      out: false,
+      time: "6:41 PM",
+    },
+    {
+      id: 2,
+      from: "A",
+      text: "Yeah! Let's grab dinner 🍜",
+      out: true,
+      time: "6:42 PM",
+    },
+    {
+      id: 3,
+      from: "S",
+      text: "Perfect! 7pm at the usual spot?",
+      out: false,
+      time: "6:43 PM",
+    },
+  ];
+  return (
+    <div
+      style={{
+        width: "100%",
+        maxWidth: "340px",
+        background: "var(--bg3)",
+        border: "1px solid var(--border)",
+        borderRadius: "16px",
+        padding: "16px",
+      }}
+    >
+      {msgs.map((m) => (
+        <div
+          key={m.id}
+          style={{
+            display: "flex",
+            flexDirection: m.out ? "row-reverse" : "row",
+            gap: "8px",
+            marginBottom: "12px",
+          }}
+        >
+          <div
+            className={m.from === "S" ? "av-teal" : "av-purple"}
+            style={{
+              width: 30,
+              height: 30,
+              borderRadius: "50%",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontSize: 11,
+              fontWeight: 600,
+              flexShrink: 0,
+            }}
+          >
+            {m.from}
+          </div>
+          <div>
+            <div
+              style={{
+                padding: "9px 13px",
+                borderRadius: m.out
+                  ? "16px 16px 4px 16px"
+                  : "16px 16px 16px 4px",
+                background: m.out ? "var(--sent)" : "var(--recv)",
+                border: `1px solid ${m.out ? "var(--sent-border)" : "var(--recv-border)"}`,
+                fontSize: "13px",
+                color: "var(--text1)",
+                lineHeight: 1.5,
+              }}
+            >
+              {m.text}
+            </div>
+            <div
+              style={{
+                fontSize: "10px",
+                color: "var(--text3)",
+                marginTop: "3px",
+                textAlign: m.out ? "right" : "left",
+              }}
+            >
+              {m.time}
+              {m.out && (
+                <span style={{ color: "var(--accent)", marginLeft: "3px" }}>
+                  ✓✓
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function Spinner() {
+  return (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="#000"
+      strokeWidth="2.5"
+      strokeLinecap="round"
+      style={{ animation: "spin .7s linear infinite" }}
+    >
+      <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
+      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+    </svg>
   );
 }
 
