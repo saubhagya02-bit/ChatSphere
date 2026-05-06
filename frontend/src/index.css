@@ -1,36 +1,253 @@
+@import url("https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&family=DM+Mono:wght@400;500&display=swap");
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-@property --border-angle {
-    inherits: false;
-    initial-value: 0deg;
-    syntax: "<angle>";
+:root {
+  --bg: #0e1117;
+  --bg2: #161b24;
+  --bg3: #1e2533;
+  --bg4: #252d3d;
+  --sidebar: #131720;
+  --accent: #00e5a0;
+  --accent2: #00c589;
+  --accent-dim: rgba(0, 229, 160, 0.1);
+  --sent: #1a3c2e;
+  --sent-border: rgba(0, 229, 160, 0.2);
+  --recv: #1e2533;
+  --recv-border: rgba(255, 255, 255, 0.06);
+  --text1: #eef2ff;
+  --text2: #8b94a8;
+  --text3: #535c70;
+  --border: rgba(255, 255, 255, 0.07);
+  --online: #00e5a0;
+  --red: #ff5c6a;
+  --r: 14px;
+  --r-sm: 8px;
+  --r-msg: 18px;
 }
 
-.input {
-  @apply w-full bg-[#020617]/50 border border-green-600 rounded-lg py-2 pl-10 pr-4 text-green-200 placeholder-green-400
-    focus:ring-2 focus:ring-emerald-400 focus:border-transparent;
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
 }
 
-.auth-input-icon {
-  @apply absolute left-3 top-1/2 -translate-y-1/2 text-green-400 w-5 h-5;
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  font-family: "DM Sans", sans-serif;
+  color: var(--text1);
+  -webkit-font-smoothing: antialiased;
 }
 
-.auth-input-label {
-  @apply block text-sm font-medium text-green-300 mb-2;
+/*  Scrollbars  */
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--bg4);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text3);
 }
 
-.auth-badge {
-  @apply inline-flex items-center px-3 py-1 text-xs font-medium rounded-full bg-green-500/20 text-green-300;
+input,
+textarea,
+button {
+  font-family: "DM Sans", sans-serif;
 }
 
+/*  Auth field  */
+.field {
+  margin-bottom: 14px;
+}
+.field label {
+  display: block;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text2);
+  margin-bottom: 5px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.field input {
+  width: 100%;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  padding: 11px 14px;
+  font-size: 14px;
+  color: var(--text1);
+  outline: none;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
+}
+.field input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(0, 229, 160, 0.1);
+}
+.field input::placeholder {
+  color: var(--text3);
+}
+
+/*  Auth button  */
 .auth-btn {
-  @apply w-full bg-emerald-400 text-white rounded-lg py-2.5 font-medium
-    hover:bg-emerald-500 focus:ring-2 focus:ring-emerald-400;
+  width: 100%;
+  padding: 13px;
+  background: var(--accent);
+  border: none;
+  border-radius: var(--r-sm);
+  font-size: 15px;
+  font-weight: 600;
+  color: #000;
+  cursor: pointer;
+  transition:
+    background 0.2s,
+    transform 0.15s;
+  margin-top: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.auth-btn:hover:not(:disabled) {
+  background: var(--accent2);
+  transform: translateY(-1px);
+}
+.auth-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
 }
 
-.auth-link {
-  @apply px-4 py-2 inline-block bg-emerald-400/10 rounded-lg text-emerald-300
-    hover:text-emerald-400 text-sm transition-colors;
+/*  Icon button  */
+.icon-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s;
+  flex-shrink: 0;
+}
+.icon-btn:hover {
+  background: var(--bg3);
+}
+.icon-btn svg {
+  width: 18px;
+  height: 18px;
+  stroke: var(--text2);
+  fill: none;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/*  Avatar colours  */
+.av-teal {
+  background: rgba(29, 158, 117, 0.18);
+  color: #00e5a0;
+}
+.av-blue {
+  background: rgba(24, 95, 165, 0.18);
+  color: #60a5fa;
+}
+.av-purple {
+  background: rgba(83, 74, 183, 0.18);
+  color: #a78bfa;
+}
+.av-coral {
+  background: rgba(216, 90, 48, 0.18);
+  color: #fb923c;
+}
+.av-pink {
+  background: rgba(212, 83, 126, 0.18);
+  color: #f472b6;
+}
+.av-amber {
+  background: rgba(186, 117, 23, 0.18);
+  color: #fbbf24;
+}
+
+/*  Typing dots  */
+@keyframes bounce {
+  0%,
+  60%,
+  100% {
+    transform: translateY(0);
+  }
+  30% {
+    transform: translateY(-5px);
+  }
+}
+.typing-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--text3);
+  animation: bounce 1.2s infinite;
+}
+.typing-dot:nth-child(2) {
+  animation-delay: 0.2s;
+}
+.typing-dot:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+/*  Unread badge  */
+.unread-badge {
+  background: var(--accent);
+  color: #000;
+  font-size: 10px;
+  font-weight: 700;
+  min-width: 18px;
+  height: 18px;
+  border-radius: 9px;
+  padding: 0 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+/*  Animations  */
+@keyframes fadeSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+.anim-fade-up {
+  animation: fadeSlideUp 0.25s ease both;
+}
+.anim-fade-in {
+  animation: fadeIn 0.2s ease both;
 }
