@@ -1,1 +1,1 @@
-export { MessagesLoadingSkeleton as default } from "./NoConversationPlaceholder.jsx";
+export { MessagesLoadingSkeleton as default } from "./Placeholders.jsx";
