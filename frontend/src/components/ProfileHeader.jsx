@@ -2,6 +2,7 @@ import { useState, useRef } from "react";
 import { LogOutIcon, VolumeOffIcon, Volume2Icon } from "lucide-react";
 import { useAuthStore } from "../store/useAuthStore";
 import { useChatStore } from "../store/useChatStore";
+import useKeyboardSound from "../hooks/useKeyboardSound";
 
 function ProfileHeader() {
   const { logout, authUser, uploadProfile } = useAuthStore();
@@ -17,7 +18,6 @@ function ProfileHeader() {
 
     const reader = new FileReader();
     reader.readAsDataURL(file);
-
     reader.onloadend = async () => {
       const base64Image = reader.result;
       setSelectedImg(base64Image);
@@ -57,7 +57,6 @@ function ProfileHeader() {
             <h3 className="text-slate-200 font-medium text-base max-w-[180px] truncate">
               {authUser.fullName}
             </h3>
-
             <p className="text-slate-400 text-xs">Online</p>
           </div>
         </div>
