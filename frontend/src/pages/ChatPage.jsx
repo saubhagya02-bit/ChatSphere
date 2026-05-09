@@ -27,7 +27,8 @@ const S = {
   red: "#ff5c6a",
 };
 
-/*AVATAR */
+//AVATAR
+
 const AV_COLORS = [
   { bg: "rgba(0,229,160,.14)", fg: "#00e5a0" },
   { bg: "rgba(96,165,250,.14)", fg: "#60a5fa" },
@@ -200,7 +201,7 @@ function SkeletonMessages() {
   );
 }
 
-/*TYPING DOTS */
+//TYPING DOTS
 function TypingDots() {
   return (
     <>
@@ -231,7 +232,7 @@ function TypingDots() {
   );
 }
 
-/*USER ROW */
+//USER ROW
 function UserRow({ user, selected, online, showMsgBtn, onClick, onMessage }) {
   const { unreadMessages, lastMessages, typingUsers } = useChatStore();
   const unread = unreadMessages[user._id] || 0;
@@ -360,7 +361,7 @@ function UserRow({ user, selected, online, showMsgBtn, onClick, onMessage }) {
         </div>
       )}
 
-      {/* Message button*/}
+      {/* Message button */}
       {showMsgBtn && (
         <button
           onClick={(e) => {
@@ -440,7 +441,7 @@ function EmptyList({ tab, onSwitch }) {
   );
 }
 
-/*SIDEBAR */
+//SIDEBAR
 function Sidebar({ search, setSearch }) {
   const { authUser, logout, uploadProfile, onlineUsers } = useAuthStore();
   const {
@@ -762,7 +763,7 @@ function HdrBtn({ onClick, title, children }) {
   );
 }
 
-/*MESSAGE INPUT*/
+//MESSAGE INPUT
 function MessageInput() {
   const [text, setText] = useState("");
   const [img, setImg] = useState(null);
@@ -1012,7 +1013,1057 @@ function MessageInput() {
   );
 }
 
-/*CHAT AREA */
+//CHAT HEADER  (WhatsApp-style)
+function ChatHeader({ selectedUser, isOnline, isTyping, onClose }) {
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [searching, setSearching] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [calling, setCalling] = useState(null);
+  const { socket, authUser } = useAuthStore();
+  const menuRef = useRef(null);
+  const searchRef = useRef(null);
+
+  // Emit call:start to receiver when caller opens overlay
+  useEffect(() => {
+    if (!calling || !socket || !selectedUser) return;
+    socket.emit("call:start", {
+      to: selectedUser._id,
+      type: calling,
+      callerName: authUser?.fullName,
+      callerPic: authUser?.profilePic,
+    });
+  }, [calling]);
+
+  useEffect(() => {
+    const fn = (e) => {
+      if (menuRef.current && !menuRef.current.contains(e.target))
+        setMenuOpen(false);
+    };
+    document.addEventListener("mousedown", fn);
+    return () => document.removeEventListener("mousedown", fn);
+  }, []);
+
+  // Focus search input when opened
+  useEffect(() => {
+    if (searching) searchRef.current?.focus();
+  }, [searching]);
+
+  const menuItems = [
+    {
+      label: "View profile",
+      icon: "👤",
+      action: () => toast("Profile view coming soon"),
+    },
+    {
+      label: "Search messages",
+      icon: "🔍",
+      action: () => {
+        setSearching(true);
+        setMenuOpen(false);
+      },
+    },
+    { label: "Mute notifications", icon: "🔕", action: () => toast("Muted") },
+    {
+      label: "Clear chat",
+      icon: "🗑️",
+      action: () => toast("Clear chat coming soon"),
+    },
+    {
+      label: "Block",
+      icon: "🚫",
+      action: () => toast("Block coming soon"),
+      danger: true,
+    },
+  ];
+
+  return (
+    <>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 12,
+          padding: "0 16px",
+          height: 64,
+          background: S.sideHdr,
+          borderBottom: `1px solid ${S.border}`,
+          flexShrink: 0,
+          position: "relative",
+          boxShadow: "0 2px 12px rgba(0,0,0,.25)",
+        }}
+      >
+        {/* Avatar + info */}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 12,
+            flex: 1,
+            minWidth: 0,
+          }}
+        >
+          <div style={{ position: "relative", cursor: "pointer" }}>
+            <Avatar
+              name={selectedUser?.fullName}
+              src={selectedUser?.profilePic}
+              size={42}
+              online={isOnline}
+              dot
+            />
+          </div>
+          <div style={{ minWidth: 0 }}>
+            <div
+              style={{
+                fontSize: 15,
+                fontWeight: 700,
+                color: S.text1,
+                whiteSpace: "nowrap",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+              }}
+            >
+              {selectedUser?.fullName}
+            </div>
+            <div
+              style={{
+                fontSize: 12,
+                marginTop: 1,
+                fontWeight: 500,
+                color: isTyping ? S.accent : isOnline ? S.online : S.text3,
+                display: "flex",
+                alignItems: "center",
+                gap: 4,
+              }}
+            >
+              {isTyping ? (
+                <>
+                  <TypingDots />
+                  <span style={{ marginLeft: 4 }}>typing…</span>
+                </>
+              ) : isOnline ? (
+                "● Online"
+              ) : (
+                "Offline"
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Action buttons */}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 2,
+            flexShrink: 0,
+          }}
+        >
+          {/* Search toggle */}
+          <ChatBtn
+            onClick={() => setSearching((v) => !v)}
+            active={searching}
+            title="Search messages"
+          >
+            <svg
+              width="17"
+              height="17"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+            >
+              <circle cx="11" cy="11" r="8" />
+              <path d="M21 21l-4.35-4.35" />
+            </svg>
+          </ChatBtn>
+
+          {/* Audio call */}
+          <ChatBtn onClick={() => setCalling("audio")} title="Voice call">
+            <svg
+              width="17"
+              height="17"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81a19.79 19.79 0 01-3.07-8.72A2 2 0 012 .99h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 8.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z" />
+            </svg>
+          </ChatBtn>
+
+          {/* Video call */}
+          <ChatBtn onClick={() => setCalling("video")} title="Video call">
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <polygon points="23 7 16 12 23 17 23 7" />
+              <rect x="1" y="5" width="15" height="14" rx="2" ry="2" />
+            </svg>
+          </ChatBtn>
+
+          {/* More options */}
+          <div style={{ position: "relative" }} ref={menuRef}>
+            <ChatBtn
+              onClick={() => setMenuOpen((v) => !v)}
+              active={menuOpen}
+              title="More options"
+            >
+              <svg
+                width="17"
+                height="17"
+                viewBox="0 0 24 24"
+                fill="currentColor"
+              >
+                <circle cx="12" cy="5" r="1.5" />
+                <circle cx="12" cy="12" r="1.5" />
+                <circle cx="12" cy="19" r="1.5" />
+              </svg>
+            </ChatBtn>
+
+            {/* Dropdown menu */}
+            {menuOpen && (
+              <div
+                style={{
+                  position: "absolute",
+                  top: "calc(100% + 8px)",
+                  right: 0,
+                  background: S.bg3,
+                  border: `1px solid ${S.border}`,
+                  borderRadius: 14,
+                  minWidth: 200,
+                  zIndex: 100,
+                  boxShadow:
+                    "0 8px 32px rgba(0,0,0,.4), 0 2px 8px rgba(0,0,0,.3)",
+                  overflow: "hidden",
+                  animation: "_fd .15s ease both",
+                }}
+              >
+                <style>{`@keyframes _fd{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}`}</style>
+                {menuItems.map((item, i) => (
+                  <button
+                    key={i}
+                    onClick={() => {
+                      item.action();
+                      setMenuOpen(false);
+                    }}
+                    style={{
+                      width: "100%",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 12,
+                      padding: "11px 16px",
+                      background: "transparent",
+                      border: "none",
+                      cursor: "pointer",
+                      fontFamily: "inherit",
+                      textAlign: "left",
+                      fontSize: 14,
+                      color: item.danger ? S.red : S.text1,
+                      borderTop: i > 0 ? `1px solid ${S.border}` : "none",
+                      transition: "background .12s",
+                    }}
+                    onMouseEnter={(e) =>
+                      (e.currentTarget.style.background = S.bg4)
+                    }
+                    onMouseLeave={(e) =>
+                      (e.currentTarget.style.background = "transparent")
+                    }
+                  >
+                    <span style={{ fontSize: 16 }}>{item.icon}</span>
+                    {item.label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <ChatBtn onClick={onClose} title="Close (Esc)">
+            <svg
+              width="17"
+              height="17"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.2"
+              strokeLinecap="round"
+            >
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+          </ChatBtn>
+        </div>
+      </div>
+
+      {searching && (
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 10,
+            padding: "8px 16px",
+            background: S.bg3,
+            borderBottom: `1px solid ${S.border}`,
+            animation: "_fd .15s ease both",
+          }}
+        >
+          <svg
+            width="15"
+            height="15"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke={S.text3}
+            strokeWidth="2"
+            strokeLinecap="round"
+            style={{ flexShrink: 0 }}
+          >
+            <circle cx="11" cy="11" r="8" />
+            <path d="M21 21l-4.35-4.35" />
+          </svg>
+          <input
+            ref={searchRef}
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="Search in conversation…"
+            style={{
+              flex: 1,
+              background: "transparent",
+              border: "none",
+              outline: "none",
+              fontSize: 13,
+              color: S.text1,
+              fontFamily: "inherit",
+            }}
+          />
+          <button
+            onClick={() => {
+              setSearching(false);
+              setSearchTerm("");
+            }}
+            style={{
+              background: "transparent",
+              border: "none",
+              cursor: "pointer",
+              color: S.text3,
+              fontSize: 18,
+              lineHeight: 1,
+              padding: 0,
+            }}
+          >
+            ✕
+          </button>
+        </div>
+      )}
+
+      {calling && (
+        <CallOverlay
+          user={selectedUser}
+          type={calling}
+          isCaller={true}
+          onEnd={() => setCalling(null)}
+        />
+      )}
+    </>
+  );
+}
+
+function ChatBtn({ onClick, title, active, children }) {
+  return (
+    <button
+      onClick={onClick}
+      title={title}
+      style={{
+        width: 36,
+        height: 36,
+        borderRadius: 10,
+        border: "none",
+        cursor: "pointer",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        background: active ? S.accentDim : "transparent",
+        color: active ? S.accent : S.text2,
+        transition: "all .15s",
+        flexShrink: 0,
+      }}
+      onMouseEnter={(e) => {
+        if (!active) {
+          e.currentTarget.style.background = S.bg3;
+          e.currentTarget.style.color = S.text1;
+        }
+      }}
+      onMouseLeave={(e) => {
+        if (!active) {
+          e.currentTarget.style.background = "transparent";
+          e.currentTarget.style.color = S.text2;
+        }
+      }}
+    >
+      {children}
+    </button>
+  );
+}
+
+//INCOMING CALL BANNER
+function IncomingCallBanner({ call, onAccept, onReject }) {
+  return (
+    <div
+      style={{
+        position: "fixed",
+        top: 20,
+        left: "50%",
+        transform: "translateX(-50%)",
+        zIndex: 300,
+        background: S.bg3,
+        border: `1px solid ${S.border}`,
+        borderRadius: 20,
+        padding: "18px 24px",
+        minWidth: 320,
+        boxShadow: "0 12px 48px rgba(0,0,0,.6)",
+        display: "flex",
+        alignItems: "center",
+        gap: 16,
+        animation: "_fd .2s ease both",
+      }}
+    >
+      <div
+        style={{
+          width: 52,
+          height: 52,
+          borderRadius: "50%",
+          flexShrink: 0,
+          animation: "_ring2 1.5s ease infinite",
+        }}
+      >
+        <Avatar name={call.callerName} src={call.callerPic} size={52} />
+      </div>
+      <style>{`@keyframes _ring2{0%,100%{box-shadow:0 0 0 3px ${S.accent}50}50%{box-shadow:0 0 0 7px ${S.accent}20}}`}</style>
+      <div style={{ flex: 1 }}>
+        <div style={{ fontSize: 15, fontWeight: 700, color: S.text1 }}>
+          {call.callerName}
+        </div>
+        <div style={{ fontSize: 12, color: S.text2, marginTop: 2 }}>
+          {call.type === "video"
+            ? "📹 Incoming video call…"
+            : "📞 Incoming voice call…"}
+        </div>
+      </div>
+      <div style={{ display: "flex", gap: 10 }}>
+        {/* Reject */}
+        <button
+          onClick={onReject}
+          style={{
+            width: 44,
+            height: 44,
+            borderRadius: "50%",
+            border: "none",
+            background: S.red,
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            boxShadow: `0 4px 14px ${S.red}60`,
+            transition: "transform .15s",
+          }}
+          onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.1)")}
+          onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="white">
+            <path d="M23.36 14.6c-.23-.22-5.3-3.8-6.48-3.57-.57.12-1 .56-1.83 1.6-.13.17-.46.54-.7.76a9.67 9.67 0 01-2.15-1.26 9.37 9.37 0 01-1.27-2.14c.23-.25.6-.58.77-.72 1.03-.83 1.47-1.27 1.59-1.84.22-1.18-3.38-6.27-3.6-6.5A2 2 0 008.24.99C6.5.99 1 7.96 1 9.23c0 .08.02 8.65 10.7 13.64C16.1 25 20.7 23 21.6 22.5l.06-.04A2 2 0 0023.36 14.6z" />
+          </svg>
+        </button>
+        {/* Accept */}
+        <button
+          onClick={onAccept}
+          style={{
+            width: 44,
+            height: 44,
+            borderRadius: "50%",
+            border: "none",
+            background: S.accent,
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            boxShadow: `0 4px 14px ${S.accent}60`,
+            transition: "transform .15s",
+          }}
+          onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.1)")}
+          onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="black">
+            <path d="M23.36 14.6c-.23-.22-5.3-3.8-6.48-3.57-.57.12-1 .56-1.83 1.6-.13.17-.46.54-.7.76a9.67 9.67 0 01-2.15-1.26 9.37 9.37 0 01-1.27-2.14c.23-.25.6-.58.77-.72 1.03-.83 1.47-1.27 1.59-1.84.22-1.18-3.38-6.27-3.6-6.5A2 2 0 008.24.99C6.5.99 1 7.96 1 9.23c0 .08.02 8.65 10.7 13.64C16.1 25 20.7 23 21.6 22.5l.06-.04A2 2 0 0023.36 14.6z" />
+          </svg>
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// REAL WebRTC CALL OVERLA
+function CallOverlay({ user, type, isCaller, onEnd }) {
+  const { socket } = useAuthStore();
+  const { selectedUser } = useChatStore();
+
+  // Call state
+  const [status, setStatus] = useState(isCaller ? "Calling…" : "Connecting…");
+  const [elapsed, setElapsed] = useState(0);
+  const [muted, setMuted] = useState(false);
+  const [camOff, setCamOff] = useState(false);
+  const [speaker, setSpeaker] = useState(true);
+
+  const pcRef = useRef(null);
+  const localStream = useRef(null);
+  const localVideoRef = useRef(null);
+  const remoteVideoRef = useRef(null);
+
+  const STUN = {
+    iceServers: [
+      { urls: "stun:stun.l.google.com:19302" },
+      { urls: "stun:stun1.l.google.com:19302" },
+    ],
+  };
+
+  const fmt = (s) =>
+    `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
+
+  useEffect(() => {
+    if (!socket) return;
+    let pc;
+
+    const init = async () => {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          audio: true,
+          video: type === "video",
+        });
+        localStream.current = stream;
+        if (localVideoRef.current) localVideoRef.current.srcObject = stream;
+
+        pc = new RTCPeerConnection(STUN);
+        pcRef.current = pc;
+
+        stream.getTracks().forEach((t) => pc.addTrack(t, stream));
+
+        o;
+        pc.ontrack = (e) => {
+          if (remoteVideoRef.current)
+            remoteVideoRef.current.srcObject = e.streams[0];
+        };
+
+        pc.onicecandidate = (e) => {
+          if (e.candidate) {
+            socket.emit("call:ice-candidate", {
+              to: user._id,
+              candidate: e.candidate,
+            });
+          }
+        };
+
+        pc.onconnectionstatechange = () => {
+          if (pc.connectionState === "connected") setStatus("connected");
+          if (["disconnected", "failed", "closed"].includes(pc.connectionState))
+            hangup();
+        };
+
+        if (isCaller) {
+          const offer = await pc.createOffer();
+          await pc.setLocalDescription(offer);
+          socket.emit("call:offer", { to: user._id, offer, type });
+        }
+      } catch (err) {
+        console.error("Media error:", err);
+        toast.error("Could not access camera/microphone");
+        onEnd();
+      }
+    };
+
+    init();
+
+    const onAnswer = async ({ answer }) => {
+      if (!pc) return;
+      await pc.setRemoteDescription(new RTCSessionDescription(answer));
+    };
+
+    const onIce = async ({ candidate }) => {
+      if (!pc) return;
+      try {
+        await pc.addIceCandidate(new RTCIceCandidate(candidate));
+      } catch {}
+    };
+
+    const onOffer = async ({ offer, from }) => {
+      if (!pc || isCaller) return;
+      await pc.setRemoteDescription(new RTCSessionDescription(offer));
+      const answer = await pc.createAnswer();
+      await pc.setLocalDescription(answer);
+      socket.emit("call:answer", { to: from, answer });
+    };
+
+    const onHangup = () => hangup(false);
+
+    socket.on("call:answer", onAnswer);
+    socket.on("call:ice-candidate", onIce);
+    socket.on("call:offer", onOffer);
+    socket.on("call:ended", onHangup);
+
+    return () => {
+      socket.off("call:answer", onAnswer);
+      socket.off("call:ice-candidate", onIce);
+      socket.off("call:offer", onOffer);
+      socket.off("call:ended", onHangup);
+      hangup(false);
+    };
+  }, [socket]);
+
+  useEffect(() => {
+    if (status !== "connected") return;
+    const t = setInterval(() => setElapsed((s) => s + 1), 1000);
+    return () => clearInterval(t);
+  }, [status]);
+
+  const hangup = (notify = true) => {
+    if (notify && socket) socket.emit("call:end", { to: user._id });
+    localStream.current?.getTracks().forEach((t) => t.stop());
+    pcRef.current?.close();
+    onEnd();
+  };
+
+  const toggleMute = () => {
+    localStream.current?.getAudioTracks().forEach((t) => (t.enabled = muted));
+    setMuted((v) => !v);
+  };
+
+  const toggleCam = () => {
+    localStream.current?.getVideoTracks().forEach((t) => (t.enabled = camOff));
+    setCamOff((v) => !v);
+  };
+
+  const isVideo = type === "video";
+  const isConnected = status === "connected";
+
+  return (
+    <div
+      style={{
+        position: "fixed",
+        inset: 0,
+        zIndex: 200,
+        background: isVideo ? "#000" : "rgba(10,14,20,.96)",
+        backdropFilter: isVideo ? "none" : "blur(16px)",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        animation: "_fd .2s ease both",
+      }}
+    >
+      {/* Video streams */}
+      {isVideo && (
+        <>
+          <video
+            ref={remoteVideoRef}
+            autoPlay
+            playsInline
+            style={{
+              position: "absolute",
+              inset: 0,
+              width: "100%",
+              height: "100%",
+              objectFit: "cover",
+              zIndex: 0,
+            }}
+          />
+
+          <video
+            ref={localVideoRef}
+            autoPlay
+            playsInline
+            muted
+            style={{
+              position: "absolute",
+              bottom: 100,
+              right: 20,
+              width: 160,
+              height: 100,
+              borderRadius: 12,
+              objectFit: "cover",
+              zIndex: 2,
+              border: `2px solid ${S.border}`,
+              boxShadow: "0 4px 20px rgba(0,0,0,.6)",
+            }}
+          />
+        </>
+      )}
+
+      {!isVideo && <audio ref={remoteVideoRef} autoPlay />}
+
+      <div
+        style={{
+          position: "relative",
+          zIndex: 3,
+          textAlign: "center",
+          display: isVideo && isConnected ? "none" : "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          gap: 16,
+        }}
+      >
+        <div
+          style={{
+            width: 120,
+            height: 120,
+            borderRadius: "50%",
+            animation: "_ring 2s ease infinite",
+          }}
+        >
+          <Avatar name={user?.fullName} src={user?.profilePic} size={120} />
+        </div>
+        <style>{`@keyframes _ring{0%,100%{box-shadow:0 0 0 4px ${S.accent}40,0 0 0 10px ${S.accent}18}50%{box-shadow:0 0 0 8px ${S.accent}30,0 0 0 18px ${S.accent}08}}`}</style>
+
+        <div>
+          <div
+            style={{
+              fontSize: 24,
+              fontWeight: 700,
+              color: S.text1,
+              marginBottom: 6,
+            }}
+          >
+            {user?.fullName}
+          </div>
+          <div
+            style={{
+              fontSize: 14,
+              color: isConnected ? S.accent : S.text2,
+              fontWeight: 500,
+            }}
+          >
+            {isConnected ? fmt(elapsed) : status}
+          </div>
+          <div style={{ fontSize: 12, color: S.text3, marginTop: 4 }}>
+            {isVideo ? "📹 Video call" : "📞 Voice call"}
+          </div>
+        </div>
+      </div>
+
+      {isVideo && isConnected && (
+        <div
+          style={{
+            position: "absolute",
+            top: 16,
+            left: "50%",
+            transform: "translateX(-50%)",
+            zIndex: 3,
+            background: "rgba(0,0,0,.5)",
+            backdropFilter: "blur(8px)",
+            borderRadius: 100,
+            padding: "6px 16px",
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+          }}
+        >
+          <span
+            style={{
+              width: 8,
+              height: 8,
+              borderRadius: "50%",
+              background: S.accent,
+              boxShadow: `0 0 6px ${S.accent}`,
+            }}
+          />
+          <span style={{ fontSize: 13, fontWeight: 600, color: "white" }}>
+            {fmt(elapsed)}
+          </span>
+        </div>
+      )}
+
+      <div
+        style={{
+          position: "absolute",
+          bottom: 36,
+          left: "50%",
+          transform: "translateX(-50%)",
+          zIndex: 3,
+          display: "flex",
+          alignItems: "center",
+          gap: 14,
+          background: "rgba(0,0,0,.55)",
+          backdropFilter: "blur(12px)",
+          borderRadius: 24,
+          padding: "12px 20px",
+          border: `1px solid rgba(255,255,255,.08)`,
+        }}
+      >
+        {/* Mute */}
+        <CallCtrlBtn
+          active={muted}
+          onClick={toggleMute}
+          title={muted ? "Unmute" : "Mute"}
+        >
+          {muted ? (
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+            >
+              <line x1="1" y1="1" x2="23" y2="23" />
+              <path d="M9 9v3a3 3 0 005.12 2.12M15 9.34V4a3 3 0 00-5.94-.6" />
+              <path d="M17 16.95A7 7 0 015 12v-2m14 0v2a7 7 0 01-.11 1.23M12 19v4M8 23h8" />
+            </svg>
+          ) : (
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+            >
+              <path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z" />
+              <path d="M19 10v2a7 7 0 01-14 0v-2M12 19v4M8 23h8" />
+            </svg>
+          )}
+          <span style={{ fontSize: 11, marginTop: 3 }}>
+            {muted ? "Unmute" : "Mute"}
+          </span>
+        </CallCtrlBtn>
+
+        {/* Speaker*/}
+        {!isVideo && (
+          <CallCtrlBtn
+            active={!speaker}
+            onClick={() => setSpeaker((v) => !v)}
+            title="Speaker"
+          >
+            {speaker ? (
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+              >
+                <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+                <path d="M19.07 4.93a10 10 0 010 14.14M15.54 8.46a5 5 0 010 7.07" />
+              </svg>
+            ) : (
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+              >
+                <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+                <line x1="23" y1="9" x2="17" y2="15" />
+                <line x1="17" y1="9" x2="23" y2="15" />
+              </svg>
+            )}
+            <span style={{ fontSize: 11, marginTop: 3 }}>Speaker</span>
+          </CallCtrlBtn>
+        )}
+
+        {/* Camera */}
+        {isVideo && (
+          <CallCtrlBtn
+            active={camOff}
+            onClick={toggleCam}
+            title={camOff ? "Turn on camera" : "Turn off camera"}
+          >
+            {camOff ? (
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+              >
+                <line x1="1" y1="1" x2="23" y2="23" />
+                <path d="M21 21H3a2 2 0 01-2-2V8a2 2 0 012-2h3m3-3h6l2 3h3a2 2 0 012 2v9.34" />
+                <path d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+            ) : (
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+              >
+                <polygon points="23 7 16 12 23 17 23 7" />
+                <rect x="1" y="5" width="15" height="14" rx="2" ry="2" />
+              </svg>
+            )}
+            <span style={{ fontSize: 11, marginTop: 3 }}>
+              {camOff ? "Camera off" : "Camera"}
+            </span>
+          </CallCtrlBtn>
+        )}
+
+        {/* End call */}
+        <button
+          onClick={() => hangup(true)}
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: 3,
+            width: 64,
+            height: 64,
+            borderRadius: "50%",
+            border: "none",
+            background: S.red,
+            cursor: "pointer",
+            color: "white",
+            fontSize: 11,
+            fontWeight: 600,
+            fontFamily: "inherit",
+            boxShadow: `0 4px 20px ${S.red}70`,
+            transition: "transform .15s",
+          }}
+          onMouseEnter={(e) =>
+            (e.currentTarget.style.transform = "scale(1.08)")
+          }
+          onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
+        >
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="white">
+            <path d="M23.36 14.6c-.23-.22-5.3-3.8-6.48-3.57-.57.12-1 .56-1.83 1.6-.13.17-.46.54-.7.76a9.67 9.67 0 01-2.15-1.26 9.37 9.37 0 01-1.27-2.14c.23-.25.6-.58.77-.72 1.03-.83 1.47-1.27 1.59-1.84.22-1.18-3.38-6.27-3.6-6.5A2 2 0 008.24.99C6.5.99 1 7.96 1 9.23c0 .08.02 8.65 10.7 13.64C16.1 25 20.7 23 21.6 22.5l.06-.04A2 2 0 0023.36 14.6z" />
+          </svg>
+          End
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function CallCtrlBtn({ onClick, active, title, children }) {
+  return (
+    <button
+      onClick={onClick}
+      title={title}
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        gap: 3,
+        width: 56,
+        height: 56,
+        borderRadius: "50%",
+        border: "none",
+        cursor: "pointer",
+        background: active ? S.accentDim : "rgba(255,255,255,.08)",
+        color: active ? S.accent : "white",
+        fontFamily: "inherit",
+        transition: "all .15s",
+      }}
+      onMouseEnter={(e) =>
+        (e.currentTarget.style.background = active
+          ? S.accentDim
+          : "rgba(255,255,255,.15)")
+      }
+      onMouseLeave={(e) =>
+        (e.currentTarget.style.background = active
+          ? S.accentDim
+          : "rgba(255,255,255,.08)")
+      }
+    >
+      {children}
+    </button>
+  );
+}
+
+function CallManager() {
+  const { socket, authUser } = useAuthStore();
+  const [incoming, setIncoming] = useState(null);
+  const [active, setActive] = useState(null);
+
+  useEffect(() => {
+    if (!socket) return;
+
+    const onIncoming = ({ from, callerName, callerPic, type, offer }) => {
+      setIncoming({ callerId: from, callerName, callerPic, type, offer });
+    };
+
+    const onEnded = () => {
+      setIncoming(null);
+      setActive(null);
+    };
+
+    socket.on("call:incoming", onIncoming);
+    socket.on("call:ended", onEnded);
+    return () => {
+      socket.off("call:incoming", onIncoming);
+      socket.off("call:ended", onEnded);
+    };
+  }, [socket]);
+
+  const acceptCall = () => {
+    if (!incoming) return;
+
+    socket.emit("call:accept", { to: incoming.callerId });
+    setActive({
+      user: {
+        _id: incoming.callerId,
+        fullName: incoming.callerName,
+        profilePic: incoming.callerPic,
+      },
+      type: incoming.type,
+      isCaller: false,
+      offer: incoming.offer,
+    });
+    setIncoming(null);
+  };
+
+  const rejectCall = () => {
+    if (incoming) socket.emit("call:reject", { to: incoming.callerId });
+    setIncoming(null);
+  };
+
+  return (
+    <>
+      {incoming && !active && (
+        <IncomingCallBanner
+          call={incoming}
+          onAccept={acceptCall}
+          onReject={rejectCall}
+        />
+      )}
+      {active && (
+        <CallOverlay
+          user={active.user}
+          type={active.type}
+          isCaller={active.isCaller}
+          onEnd={() => setActive(null)}
+        />
+      )}
+    </>
+  );
+}
+
+//CHAT AREA
 function ChatArea() {
   const {
     selectedUser,
@@ -1056,77 +2107,14 @@ function ChatArea() {
         overflow: "hidden",
       }}
     >
-      {/* Header */}
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: 12,
-          padding: "12px 20px",
-          background: S.sideHdr,
-          borderBottom: `1px solid ${S.border}`,
-          flexShrink: 0,
-          boxShadow: "0 1px 0 rgba(0,0,0,.2)",
-        }}
-      >
-        <Avatar
-          name={selectedUser?.fullName}
-          src={selectedUser?.profilePic}
-          size={42}
-          online={isOnline}
-          dot
-        />
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 15, fontWeight: 700, color: S.text1 }}>
-            {selectedUser?.fullName}
-          </div>
-          <div
-            style={{
-              fontSize: 12,
-              marginTop: 1,
-              fontWeight: 500,
-              color: isTyping ? S.accent : isOnline ? S.online : S.text3,
-            }}
-          >
-            {isTyping ? "typing…" : isOnline ? "● Online" : "Offline"}
-          </div>
-        </div>
-        <button
-          onClick={() => setSelectedUser(null)}
-          title="Close (Esc)"
-          style={{
-            background: "transparent",
-            border: "none",
-            cursor: "pointer",
-            width: 34,
-            height: 34,
-            borderRadius: 8,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            transition: "background .15s",
-          }}
-          onMouseEnter={(e) => (e.currentTarget.style.background = S.bg3)}
-          onMouseLeave={(e) =>
-            (e.currentTarget.style.background = "transparent")
-          }
-        >
-          <svg
-            width="18"
-            height="18"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke={S.text2}
-            strokeWidth="2"
-            strokeLinecap="round"
-          >
-            <line x1="18" y1="6" x2="6" y2="18" />
-            <line x1="6" y1="6" x2="18" y2="18" />
-          </svg>
-        </button>
-      </div>
+      <ChatHeader
+        selectedUser={selectedUser}
+        isOnline={isOnline}
+        isTyping={isTyping}
+        onClose={() => setSelectedUser(null)}
+      />
 
-      {/*Messages*/}
+      {/* Messages */}
       <div
         style={{
           flex: 1,
@@ -1339,7 +2327,7 @@ function ChatArea() {
   );
 }
 
-/*NO CONVERSATION PLACEHOLDER */
+//NO CONVERSATION PLACEHOLDER
 function NoConversation() {
   const { setActiveTab } = useChatStore();
   return (
@@ -1470,6 +2458,7 @@ function SpinnerSVG({ size = 16, color = "#000" }) {
   );
 }
 
+//ROOT
 export default function ChatPage() {
   const { selectedUser } = useChatStore();
   const [search, setSearch] = useState("");
@@ -1483,6 +2472,7 @@ export default function ChatPage() {
         fontFamily: "'DM Sans',sans-serif",
       }}
     >
+      <CallManager />
       <Sidebar search={search} setSearch={setSearch} />
       <main
         style={{
