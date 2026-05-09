@@ -3,6 +3,8 @@ import { axiosInstance } from "../lib/axios";
 import toast from "react-hot-toast";
 import { useAuthStore } from "./useAuthStore";
 
+const sameId = (a, b) => a?.toString() === b?.toString();
+
 export const useChatStore = create((set, get) => ({
   allContacts: [],
   chats: [],
@@ -11,7 +13,16 @@ export const useChatStore = create((set, get) => ({
   selectedUser: null,
   isUsersLoading: false,
   isMessagesLoading: false,
-  isSoundEnabled: JSON.parse(localStorage.getItem("isSoundEnabled")) !== false, // default ON
+  isSoundEnabled: JSON.parse(localStorage.getItem("isSoundEnabled")) !== false,
+
+  //unread count per conversation
+  unreadMessages: {},
+
+  //last message text per conversation
+  lastMessages: {},
+
+  // Set of userIds currently typing
+  typingUsers: new Set(),
 
   toggleSound: () => {
     const next = !get().isSoundEnabled;
@@ -20,7 +31,19 @@ export const useChatStore = create((set, get) => ({
   },
 
   setActiveTab: (tab) => set({ activeTab: tab }),
-  setSelectedUser: (user) => set({ selectedUser: user }),
+
+  // Clear unread count when opening a chat
+  setSelectedUser: (user) => {
+    if (!user) {
+      set({ selectedUser: null });
+      return;
+    }
+    set((state) => {
+      const updated = { ...state.unreadMessages };
+      delete updated[user._id];
+      return { selectedUser: user, unreadMessages: updated };
+    });
+  },
 
   getAllContacts: async () => {
     set({ isUsersLoading: true });
@@ -51,6 +74,17 @@ export const useChatStore = create((set, get) => ({
     try {
       const res = await axiosInstance.get(`/messages/${userId}`);
       set({ messages: res.data });
+
+      // Set last message preview from history
+      if (res.data.length > 0) {
+        const last = res.data[res.data.length - 1];
+        set((s) => ({
+          lastMessages: {
+            ...s.lastMessages,
+            [userId]: last.image ? "📷 Photo" : last.text || "",
+          },
+        }));
+      }
     } catch (err) {
       toast.error(err.response?.data?.message || "Failed to load messages");
     } finally {
@@ -65,14 +99,23 @@ export const useChatStore = create((set, get) => ({
     const tempId = `temp-${Date.now()}`;
     const optimistic = {
       _id: tempId,
-      senderId: authUser._id,
-      receiverId: selectedUser._id,
+      senderId: authUser._id.toString(),
+      receiverId: selectedUser._id.toString(),
       text: messageData.text,
       image: messageData.image,
       createdAt: new Date().toISOString(),
       isOptimistic: true,
     };
     set({ messages: [...messages, optimistic] });
+
+    set((s) => ({
+      lastMessages: {
+        ...s.lastMessages,
+        [selectedUser._id]: messageData.image
+          ? "📷 Photo"
+          : messageData.text || "",
+      },
+    }));
 
     try {
       const res = await axiosInstance.post(
@@ -82,34 +125,114 @@ export const useChatStore = create((set, get) => ({
       set((s) => ({
         messages: s.messages.map((m) => (m._id === tempId ? res.data : m)),
       }));
+
+      // Move this chat to top of list
+      set((s) => {
+        const chats = [...s.chats];
+        const idx = chats.findIndex((c) => sameId(c._id, selectedUser._id));
+        if (idx > 0) {
+          chats.unshift(chats.splice(idx, 1)[0]);
+        }
+        return { chats };
+      });
     } catch (err) {
-      set({ messages }); // roll back
+      set({ messages });
       toast.error(err.response?.data?.message || "Failed to send message");
     }
   },
 
   subscribeToMessage: () => {
-    const { selectedUser } = get();
-    if (!selectedUser) return;
-
     const socket = useAuthStore.getState().socket;
     if (!socket) return;
 
+    // New message
     socket.on("newMessage", (msg) => {
-      if (msg.senderId !== selectedUser._id) return;
+      const { selectedUser, isSoundEnabled } = get();
 
-      set((s) => ({ messages: [...s.messages, msg] }));
+      const isFromSelectedUser = sameId(msg.senderId, selectedUser?._id);
+      const isToSelectedUser = sameId(msg.receiverId, selectedUser?._id);
 
-      if (get().isSoundEnabled) {
+      const already = get().messages.some((m) => sameId(m._id, msg._id));
+      if (already) return;
+
+      if (isFromSelectedUser || isToSelectedUser) {
+        set((s) => ({ messages: [...s.messages, msg] }));
+      }
+
+      // Update last message preview for the sender's row in the sidebar
+      const previewText = msg.image ? "📷 Photo" : msg.text || "";
+      set((s) => ({
+        lastMessages: {
+          ...s.lastMessages,
+          [msg.senderId]: previewText,
+        },
+        // Sort chats: move the sender to the top
+        chats: (() => {
+          const chats = [...s.chats];
+          const idx = chats.findIndex((c) => sameId(c._id, msg.senderId));
+          if (idx > 0) {
+            chats.unshift(chats.splice(idx, 1)[0]);
+          }
+          return chats;
+        })(),
+      }));
+
+      // Unread count — only if this conversation is NOT open
+      if (!isFromSelectedUser) {
+        set((s) => ({
+          unreadMessages: {
+            ...s.unreadMessages,
+            [msg.senderId]: (s.unreadMessages[msg.senderId] || 0) + 1,
+          },
+        }));
+      }
+
+      // Sound — only for messages from the other person
+      if (isFromSelectedUser && isSoundEnabled) {
         const snd = new Audio("/sounds/msgSound.mp3");
         snd.volume = 0.6;
         snd.play().catch(() => {});
       }
+    });
+
+    // Typing indicator
+    socket.on("typing", ({ senderId }) => {
+      set((s) => {
+        const next = new Set(s.typingUsers);
+        next.add(senderId);
+        return { typingUsers: next };
+      });
+    });
+
+    socket.on("stopTyping", ({ senderId }) => {
+      set((s) => {
+        const next = new Set(s.typingUsers);
+        next.delete(senderId);
+        return { typingUsers: next };
+      });
     });
   },
 
   unsubscribeFromMessage: () => {
     const socket = useAuthStore.getState().socket;
     socket?.off("newMessage");
+    socket?.off("typing");
+    socket?.off("stopTyping");
+  },
+
+  emitTyping: () => {
+    const socket = useAuthStore.getState().socket;
+    const { selectedUser } = get();
+    if (socket && selectedUser) {
+      socket.emit("typing", { receiverId: selectedUser._id });
+    }
+  },
+
+  emitStopTyping: () => {
+    const socket = useAuthStore.getState().socket;
+    const { selectedUser } = get();
+    if (socket && selectedUser) {
+      socket.emit("stopTyping", { receiverId: selectedUser._id });
+    }
   },
 }));
