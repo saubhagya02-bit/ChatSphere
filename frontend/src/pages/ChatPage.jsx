@@ -232,7 +232,7 @@ function TypingDots() {
   );
 }
 
-//USER ROW
+// USER ROW
 function UserRow({ user, selected, online, showMsgBtn, onClick, onMessage }) {
   const { unreadMessages, lastMessages, typingUsers } = useChatStore();
   const unread = unreadMessages[user._id] || 0;
@@ -361,7 +361,7 @@ function UserRow({ user, selected, online, showMsgBtn, onClick, onMessage }) {
         </div>
       )}
 
-      {/* Message button */}
+      {/*Message button*/}
       {showMsgBtn && (
         <button
           onClick={(e) => {
@@ -672,6 +672,7 @@ function Sidebar({ search, setSearch }) {
         </div>
       </div>
 
+      {/* Tabs */}
       <div
         style={{
           display: "flex",
@@ -763,7 +764,7 @@ function HdrBtn({ onClick, title, children }) {
   );
 }
 
-//MESSAGE INPUT
+//MESSAGE INPUT  (with typing emit)
 function MessageInput() {
   const [text, setText] = useState("");
   const [img, setImg] = useState(null);
@@ -1013,7 +1014,8 @@ function MessageInput() {
   );
 }
 
-//CHAT HEADER  (WhatsApp-style)
+//CHAT HEADER
+
 function ChatHeader({ selectedUser, isOnline, isTyping, onClose }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [searching, setSearching] = useState(false);
@@ -1034,6 +1036,7 @@ function ChatHeader({ selectedUser, isOnline, isTyping, onClose }) {
     });
   }, [calling]);
 
+  // Close menu on outside click
   useEffect(() => {
     const fn = (e) => {
       if (menuRef.current && !menuRef.current.contains(e.target))
@@ -1043,7 +1046,6 @@ function ChatHeader({ selectedUser, isOnline, isTyping, onClose }) {
     return () => document.removeEventListener("mousedown", fn);
   }, []);
 
-  // Focus search input when opened
   useEffect(() => {
     if (searching) searchRef.current?.focus();
   }, [searching]);
@@ -1304,6 +1306,7 @@ function ChatHeader({ selectedUser, isOnline, isTyping, onClose }) {
         </div>
       </div>
 
+      {/* Inline search bar  */}
       {searching && (
         <div
           style={{
@@ -1364,6 +1367,7 @@ function ChatHeader({ selectedUser, isOnline, isTyping, onClose }) {
         </div>
       )}
 
+      {/* Call overlay */}
       {calling && (
         <CallOverlay
           user={selectedUser}
@@ -1481,7 +1485,7 @@ function IncomingCallBanner({ call, onAccept, onReject }) {
             <path d="M23.36 14.6c-.23-.22-5.3-3.8-6.48-3.57-.57.12-1 .56-1.83 1.6-.13.17-.46.54-.7.76a9.67 9.67 0 01-2.15-1.26 9.37 9.37 0 01-1.27-2.14c.23-.25.6-.58.77-.72 1.03-.83 1.47-1.27 1.59-1.84.22-1.18-3.38-6.27-3.6-6.5A2 2 0 008.24.99C6.5.99 1 7.96 1 9.23c0 .08.02 8.65 10.7 13.64C16.1 25 20.7 23 21.6 22.5l.06-.04A2 2 0 0023.36 14.6z" />
           </svg>
         </button>
-        {/* Accept */}
+
         <button
           onClick={onAccept}
           style={{
@@ -1509,12 +1513,9 @@ function IncomingCallBanner({ call, onAccept, onReject }) {
   );
 }
 
-// REAL WebRTC CALL OVERLA
 function CallOverlay({ user, type, isCaller, onEnd }) {
   const { socket } = useAuthStore();
-  const { selectedUser } = useChatStore();
 
-  // Call state
   const [status, setStatus] = useState(isCaller ? "Calling…" : "Connecting…");
   const [elapsed, setElapsed] = useState(0);
   const [muted, setMuted] = useState(false);
@@ -1522,9 +1523,10 @@ function CallOverlay({ user, type, isCaller, onEnd }) {
   const [speaker, setSpeaker] = useState(true);
 
   const pcRef = useRef(null);
-  const localStream = useRef(null);
+  const localStreamRef = useRef(null);
   const localVideoRef = useRef(null);
   const remoteVideoRef = useRef(null);
+  const hangupRef = useRef(null);
 
   const STUN = {
     iceServers: [
@@ -1536,72 +1538,93 @@ function CallOverlay({ user, type, isCaller, onEnd }) {
   const fmt = (s) =>
     `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
 
+  const hangup = (notify = true) => {
+    if (notify && socket) socket.emit("call:end", { to: user._id });
+    localStreamRef.current?.getTracks().forEach((t) => t.stop());
+    localStreamRef.current = null;
+    pcRef.current?.close();
+    pcRef.current = null;
+    onEnd();
+  };
+  hangupRef.current = hangup;
+
+  const createPC = (stream) => {
+    const pc = new RTCPeerConnection(STUN);
+    pcRef.current = pc;
+
+    stream.getTracks().forEach((t) => pc.addTrack(t, stream));
+
+    pc.ontrack = (e) => {
+      if (remoteVideoRef.current)
+        remoteVideoRef.current.srcObject = e.streams[0];
+    };
+
+    pc.onicecandidate = (e) => {
+      if (e.candidate && socket) {
+        socket.emit("call:ice-candidate", {
+          to: user._id,
+          candidate: e.candidate,
+        });
+      }
+    };
+
+    pc.onconnectionstatechange = () => {
+      const state = pc.connectionState;
+      if (state === "connected") setStatus("connected");
+      if (["disconnected", "failed", "closed"].includes(state))
+        hangupRef.current(false);
+    };
+
+    return pc;
+  };
+
   useEffect(() => {
     if (!socket) return;
-    let pc;
+    let cancelled = false;
 
-    const init = async () => {
+    const startMedia = async () => {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({
           audio: true,
           video: type === "video",
         });
-        localStream.current = stream;
+
+        if (cancelled) {
+          stream.getTracks().forEach((t) => t.stop());
+          return;
+        }
+
+        localStreamRef.current = stream;
         if (localVideoRef.current) localVideoRef.current.srcObject = stream;
 
-        pc = new RTCPeerConnection(STUN);
-        pcRef.current = pc;
-
-        stream.getTracks().forEach((t) => pc.addTrack(t, stream));
-
-        o;
-        pc.ontrack = (e) => {
-          if (remoteVideoRef.current)
-            remoteVideoRef.current.srcObject = e.streams[0];
-        };
-
-        pc.onicecandidate = (e) => {
-          if (e.candidate) {
-            socket.emit("call:ice-candidate", {
-              to: user._id,
-              candidate: e.candidate,
-            });
-          }
-        };
-
-        pc.onconnectionstatechange = () => {
-          if (pc.connectionState === "connected") setStatus("connected");
-          if (["disconnected", "failed", "closed"].includes(pc.connectionState))
-            hangup();
-        };
+        const pc = createPC(stream);
 
         if (isCaller) {
+          // Caller
           const offer = await pc.createOffer();
           await pc.setLocalDescription(offer);
           socket.emit("call:offer", { to: user._id, offer, type });
         }
+        // Receiver: wait for call
       } catch (err) {
+        if (cancelled) return;
         console.error("Media error:", err);
-        toast.error("Could not access camera/microphone");
-        onEnd();
+
+        if (err.name === "NotAllowedError") {
+          toast.error("Please allow microphone/camera access and try again.");
+        } else if (err.name === "NotFoundError") {
+          toast.error("No microphone or camera found on this device.");
+        } else {
+          toast.error("Could not start call: " + err.message);
+        }
+        hangupRef.current(false);
       }
     };
 
-    init();
-
-    const onAnswer = async ({ answer }) => {
-      if (!pc) return;
-      await pc.setRemoteDescription(new RTCSessionDescription(answer));
-    };
-
-    const onIce = async ({ candidate }) => {
-      if (!pc) return;
-      try {
-        await pc.addIceCandidate(new RTCIceCandidate(candidate));
-      } catch {}
-    };
+    startMedia();
 
     const onOffer = async ({ offer, from }) => {
+      const pc = pcRef.current;
       if (!pc || isCaller) return;
       await pc.setRemoteDescription(new RTCSessionDescription(offer));
       const answer = await pc.createAnswer();
@@ -1609,19 +1632,36 @@ function CallOverlay({ user, type, isCaller, onEnd }) {
       socket.emit("call:answer", { to: from, answer });
     };
 
-    const onHangup = () => hangup(false);
+    const onAnswer = async ({ answer }) => {
+      const pc = pcRef.current;
+      if (!pc) return;
+      await pc.setRemoteDescription(new RTCSessionDescription(answer));
+    };
 
+    const onIce = async ({ candidate }) => {
+      const pc = pcRef.current;
+      if (!pc) return;
+      try {
+        await pc.addIceCandidate(new RTCIceCandidate(candidate));
+      } catch {}
+    };
+
+    const onEnded = () => hangupRef.current(false);
+
+    socket.on("call:offer", onOffer);
     socket.on("call:answer", onAnswer);
     socket.on("call:ice-candidate", onIce);
-    socket.on("call:offer", onOffer);
-    socket.on("call:ended", onHangup);
+    socket.on("call:ended", onEnded);
+    socket.on("call:rejected", onEnded);
 
     return () => {
+      cancelled = true;
+      socket.off("call:offer", onOffer);
       socket.off("call:answer", onAnswer);
       socket.off("call:ice-candidate", onIce);
-      socket.off("call:offer", onOffer);
-      socket.off("call:ended", onHangup);
-      hangup(false);
+      socket.off("call:ended", onEnded);
+      socket.off("call:rejected", onEnded);
+      hangupRef.current(false);
     };
   }, [socket]);
 
@@ -1631,20 +1671,17 @@ function CallOverlay({ user, type, isCaller, onEnd }) {
     return () => clearInterval(t);
   }, [status]);
 
-  const hangup = (notify = true) => {
-    if (notify && socket) socket.emit("call:end", { to: user._id });
-    localStream.current?.getTracks().forEach((t) => t.stop());
-    pcRef.current?.close();
-    onEnd();
-  };
-
   const toggleMute = () => {
-    localStream.current?.getAudioTracks().forEach((t) => (t.enabled = muted));
+    localStreamRef.current?.getAudioTracks().forEach((t) => {
+      t.enabled = muted;
+    });
     setMuted((v) => !v);
   };
 
   const toggleCam = () => {
-    localStream.current?.getVideoTracks().forEach((t) => (t.enabled = camOff));
+    localStreamRef.current?.getVideoTracks().forEach((t) => {
+      t.enabled = camOff;
+    });
     setCamOff((v) => !v);
   };
 
@@ -1666,7 +1703,7 @@ function CallOverlay({ user, type, isCaller, onEnd }) {
         animation: "_fd .2s ease both",
       }}
     >
-      {/* Video streams */}
+      {/*  Video streams  */}
       {isVideo && (
         <>
           <video
@@ -1843,7 +1880,7 @@ function CallOverlay({ user, type, isCaller, onEnd }) {
           </span>
         </CallCtrlBtn>
 
-        {/* Speaker*/}
+        {/* Speaker */}
         {!isVideo && (
           <CallCtrlBtn
             active={!speaker}
@@ -1882,7 +1919,7 @@ function CallOverlay({ user, type, isCaller, onEnd }) {
           </CallCtrlBtn>
         )}
 
-        {/* Camera */}
+        {/* Camera*/}
         {isVideo && (
           <CallCtrlBtn
             active={camOff}
@@ -2063,7 +2100,7 @@ function CallManager() {
   );
 }
 
-//CHAT AREA
+/*CHAT AREA */
 function ChatArea() {
   const {
     selectedUser,
@@ -2327,7 +2364,7 @@ function ChatArea() {
   );
 }
 
-//NO CONVERSATION PLACEHOLDER
+/* NO CONVERSATION PLACEHOLDER*/
 function NoConversation() {
   const { setActiveTab } = useChatStore();
   return (
@@ -2458,7 +2495,6 @@ function SpinnerSVG({ size = 16, color = "#000" }) {
   );
 }
 
-//ROOT
 export default function ChatPage() {
   const { selectedUser } = useChatStore();
   const [search, setSearch] = useState("");
