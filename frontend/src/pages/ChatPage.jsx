@@ -27,8 +27,71 @@ const S = {
   red: "#ff5c6a",
 };
 
-//AVATAR
+/*
+   TICKS  —
+   ✓  grey  = sending (optimistic)
+   ✓✓ grey  = delivered (saved to DB, not yet seen)
+   ✓✓ green = seen (receiver opened the chat)
+*/
+function Ticks({ msg }) {
+  if (msg.isOptimistic) {
+    return (
+      <svg width="14" height="10" viewBox="0 0 14 10" fill="none">
+        <path
+          d="M1 5l3 3 6-7"
+          stroke="rgba(255,255,255,.35)"
+          strokeWidth="1.6"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
+    );
+  }
 
+  // Seen — double tick GREEN
+  if (msg.seenAt) {
+    return (
+      <svg width="18" height="10" viewBox="0 0 18 10" fill="none">
+        <path
+          d="M1 5l3 3 6-7"
+          stroke={S.accent}
+          strokeWidth="1.6"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+        <path
+          d="M5 5l3 3 6-7"
+          stroke={S.accent}
+          strokeWidth="1.6"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
+    );
+  }
+
+  // Delivered — double tick GREY
+  return (
+    <svg width="18" height="10" viewBox="0 0 18 10" fill="none">
+      <path
+        d="M1 5l3 3 6-7"
+        stroke="rgba(255,255,255,.45)"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M5 5l3 3 6-7"
+        stroke="rgba(255,255,255,.45)"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+/*AVATAR */
 const AV_COLORS = [
   { bg: "rgba(0,229,160,.14)", fg: "#00e5a0" },
   { bg: "rgba(96,165,250,.14)", fg: "#60a5fa" },
@@ -201,7 +264,7 @@ function SkeletonMessages() {
   );
 }
 
-//TYPING DOTS
+/*TYPING DOTS */
 function TypingDots() {
   return (
     <>
@@ -232,7 +295,7 @@ function TypingDots() {
   );
 }
 
-// USER ROW
+/* USER ROW  */
 function UserRow({ user, selected, online, showMsgBtn, onClick, onMessage }) {
   const { unreadMessages, lastMessages, typingUsers } = useChatStore();
   const unread = unreadMessages[user._id] || 0;
@@ -361,7 +424,7 @@ function UserRow({ user, selected, online, showMsgBtn, onClick, onMessage }) {
         </div>
       )}
 
-      {/*Message button*/}
+      {/* Message button (contacts tab only) */}
       {showMsgBtn && (
         <button
           onClick={(e) => {
@@ -397,6 +460,7 @@ function UserRow({ user, selected, online, showMsgBtn, onClick, onMessage }) {
   );
 }
 
+/* EMPTY LIST */
 function EmptyList({ tab, onSwitch }) {
   return (
     <div style={{ padding: "40px 16px", textAlign: "center" }}>
@@ -441,7 +505,7 @@ function EmptyList({ tab, onSwitch }) {
   );
 }
 
-//SIDEBAR
+/*SIDEBAR */
 function Sidebar({ search, setSearch }) {
   const { authUser, logout, uploadProfile, onlineUsers } = useAuthStore();
   const {
@@ -672,7 +736,6 @@ function Sidebar({ search, setSearch }) {
         </div>
       </div>
 
-      {/* Tabs */}
       <div
         style={{
           display: "flex",
@@ -764,7 +827,7 @@ function HdrBtn({ onClick, title, children }) {
   );
 }
 
-//MESSAGE INPUT  (with typing emit)
+/*MESSAGE INPUT */
 function MessageInput() {
   const [text, setText] = useState("");
   const [img, setImg] = useState(null);
@@ -1014,8 +1077,7 @@ function MessageInput() {
   );
 }
 
-//CHAT HEADER
-
+/*CHAT HEADER  */
 function ChatHeader({ selectedUser, isOnline, isTyping, onClose }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [searching, setSearching] = useState(false);
@@ -1025,7 +1087,6 @@ function ChatHeader({ selectedUser, isOnline, isTyping, onClose }) {
   const menuRef = useRef(null);
   const searchRef = useRef(null);
 
-  // Emit call:start to receiver when caller opens overlay
   useEffect(() => {
     if (!calling || !socket || !selectedUser) return;
     socket.emit("call:start", {
@@ -1036,7 +1097,6 @@ function ChatHeader({ selectedUser, isOnline, isTyping, onClose }) {
     });
   }, [calling]);
 
-  // Close menu on outside click
   useEffect(() => {
     const fn = (e) => {
       if (menuRef.current && !menuRef.current.contains(e.target))
@@ -1139,11 +1199,11 @@ function ChatHeader({ selectedUser, isOnline, isTyping, onClose }) {
             >
               {isTyping ? (
                 <>
-                  <TypingDots />
+                
                   <span style={{ marginLeft: 4 }}>typing…</span>
                 </>
               ) : isOnline ? (
-                "● Online"
+                "● Online "
               ) : (
                 "Offline"
               )}
@@ -1306,7 +1366,6 @@ function ChatHeader({ selectedUser, isOnline, isTyping, onClose }) {
         </div>
       </div>
 
-      {/* Inline search bar  */}
       {searching && (
         <div
           style={{
@@ -1367,7 +1426,6 @@ function ChatHeader({ selectedUser, isOnline, isTyping, onClose }) {
         </div>
       )}
 
-      {/* Call overlay */}
       {calling && (
         <CallOverlay
           user={selectedUser}
@@ -1417,7 +1475,7 @@ function ChatBtn({ onClick, title, active, children }) {
   );
 }
 
-//INCOMING CALL BANNER
+/*INCOMING CALL BANNER  (shown to receiver) */
 function IncomingCallBanner({ call, onAccept, onReject }) {
   return (
     <div
@@ -1462,7 +1520,6 @@ function IncomingCallBanner({ call, onAccept, onReject }) {
         </div>
       </div>
       <div style={{ display: "flex", gap: 10 }}>
-        {/* Reject */}
         <button
           onClick={onReject}
           style={{
@@ -1600,12 +1657,9 @@ function CallOverlay({ user, type, isCaller, onEnd }) {
         const pc = createPC(stream);
 
         if (isCaller) {
-          // Caller
-          const offer = await pc.createOffer();
           await pc.setLocalDescription(offer);
           socket.emit("call:offer", { to: user._id, offer, type });
         }
-        // Receiver: wait for call
       } catch (err) {
         if (cancelled) return;
         console.error("Media error:", err);
@@ -1703,7 +1757,6 @@ function CallOverlay({ user, type, isCaller, onEnd }) {
         animation: "_fd .2s ease both",
       }}
     >
-      {/*  Video streams  */}
       {isVideo && (
         <>
           <video
@@ -1880,7 +1933,7 @@ function CallOverlay({ user, type, isCaller, onEnd }) {
           </span>
         </CallCtrlBtn>
 
-        {/* Speaker */}
+        {/* Speaker (audio only) */}
         {!isVideo && (
           <CallCtrlBtn
             active={!speaker}
@@ -1919,7 +1972,7 @@ function CallOverlay({ user, type, isCaller, onEnd }) {
           </CallCtrlBtn>
         )}
 
-        {/* Camera*/}
+        {/* Camera (video only) */}
         {isVideo && (
           <CallCtrlBtn
             active={camOff}
@@ -1960,7 +2013,6 @@ function CallOverlay({ user, type, isCaller, onEnd }) {
           </CallCtrlBtn>
         )}
 
-        {/* End call */}
         <button
           onClick={() => hangup(true)}
           style={{
@@ -2306,18 +2358,7 @@ function ChatArea() {
                       >
                         {formatMessageTime(msg.createdAt)}
                       </span>
-                      {isMine && (
-                        <span
-                          style={{
-                            fontSize: 12,
-                            color: msg.isOptimistic
-                              ? "rgba(255,255,255,.35)"
-                              : S.accent,
-                          }}
-                        >
-                          {msg.isOptimistic ? "✓" : "✓✓"}
-                        </span>
-                      )}
+                      {isMine && <Ticks msg={msg} />}
                     </div>
                   </div>
                 </div>
@@ -2364,7 +2405,7 @@ function ChatArea() {
   );
 }
 
-/* NO CONVERSATION PLACEHOLDER*/
+/*NO CONVERSATION PLACEHOLDER */
 function NoConversation() {
   const { setActiveTab } = useChatStore();
   return (
