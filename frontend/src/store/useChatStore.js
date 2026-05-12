@@ -15,13 +15,10 @@ export const useChatStore = create((set, get) => ({
   isMessagesLoading: false,
   isSoundEnabled: JSON.parse(localStorage.getItem("isSoundEnabled")) !== false,
 
-  //unread count per conversation
   unreadMessages: {},
 
-  //last message text per conversation
   lastMessages: {},
 
-  // Set of userIds currently typing
   typingUsers: new Set(),
 
   toggleSound: () => {
@@ -32,12 +29,15 @@ export const useChatStore = create((set, get) => ({
 
   setActiveTab: (tab) => set({ activeTab: tab }),
 
-  // Clear unread count when opening a chat
   setSelectedUser: (user) => {
     if (!user) {
       set({ selectedUser: null });
       return;
     }
+
+    const socket = useAuthStore.getState().socket;
+    if (socket) socket.emit("msg:seen", { senderId: user._id });
+
     set((state) => {
       const updated = { ...state.unreadMessages };
       delete updated[user._id];
@@ -75,6 +75,9 @@ export const useChatStore = create((set, get) => ({
       const res = await axiosInstance.get(`/messages/${userId}`);
       set({ messages: res.data });
 
+      const socket = useAuthStore.getState().socket;
+      if (socket) socket.emit("msg:seen", { senderId: userId });
+
       // Set last message preview from history
       if (res.data.length > 0) {
         const last = res.data[res.data.length - 1];
@@ -108,6 +111,7 @@ export const useChatStore = create((set, get) => ({
     };
     set({ messages: [...messages, optimistic] });
 
+    // Update last message preview immediately
     set((s) => ({
       lastMessages: {
         ...s.lastMessages,
@@ -155,8 +159,15 @@ export const useChatStore = create((set, get) => ({
       const already = get().messages.some((m) => sameId(m._id, msg._id));
       if (already) return;
 
+      // Append to messages only if this conversation is open
       if (isFromSelectedUser || isToSelectedUser) {
         set((s) => ({ messages: [...s.messages, msg] }));
+
+        /*If the message is FROM the other person and we have their chat open,
+        immediately mark it as seen */ if (isFromSelectedUser) {
+          const socket = useAuthStore.getState().socket;
+          if (socket) socket.emit("msg:seen", { senderId: msg.senderId });
+        }
       }
 
       // Update last message preview for the sender's row in the sidebar
@@ -166,7 +177,7 @@ export const useChatStore = create((set, get) => ({
           ...s.lastMessages,
           [msg.senderId]: previewText,
         },
-        // Sort chats: move the sender to the top
+        //move the sender to the top
         chats: (() => {
           const chats = [...s.chats];
           const idx = chats.findIndex((c) => sameId(c._id, msg.senderId));
@@ -195,7 +206,18 @@ export const useChatStore = create((set, get) => ({
       }
     });
 
-    // Typing indicator
+    socket.on("msg:seen", ({ by, at }) => {
+      set((s) => ({
+        messages: s.messages.map((m) =>
+          m.senderId?.toString() ===
+            useAuthStore.getState().authUser?._id?.toString() &&
+          m.receiverId?.toString() === by?.toString() &&
+          !m.seenAt
+            ? { ...m, seenAt: at }
+            : m,
+        ),
+      }));
+    });
     socket.on("typing", ({ senderId }) => {
       set((s) => {
         const next = new Set(s.typingUsers);
@@ -216,6 +238,7 @@ export const useChatStore = create((set, get) => ({
   unsubscribeFromMessage: () => {
     const socket = useAuthStore.getState().socket;
     socket?.off("newMessage");
+    socket?.off("msg:seen");
     socket?.off("typing");
     socket?.off("stopTyping");
   },
