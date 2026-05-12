@@ -16,11 +16,15 @@ const messageSchema = new mongoose.Schema(
     },
     text: { type: String, trim: true, maxlength: 200 },
     image: { type: String },
+
+    seenAt: { type: Date, default: null },
   },
   { timestamps: true },
 );
 
 messageSchema.index({ senderId: 1, receiverId: 1 });
 messageSchema.index({ receiverId: 1, senderId: 1 });
+
+messageSchema.index({ receiverId: 1, seenAt: 1 });
 
 export default mongoose.model("Message", messageSchema);
