@@ -31,6 +31,23 @@ io.on("connection", (socket) => {
   console.log(`✅ Connected: ${socket.user.fullName} (${socket.id})`);
   io.emit("getOnlineUsers", Object.keys(userSocketMap));
 
+  socket.on("msg:seen", async ({ senderId }) => {
+    try {
+      const { default: Message } = await import("../models/message.js");
+      const now = new Date();
+
+      await Message.updateMany(
+        { senderId, receiverId: userId, seenAt: null },
+        { $set: { seenAt: now } },
+      );
+
+      // Tell the original sender their messages have been seen
+      emitTo(senderId, "msg:seen", { by: userId, at: now });
+    } catch (err) {
+      console.error("msg:seen error:", err);
+    }
+  });
+
   // TYPING
   socket.on("typing", ({ receiverId }) => {
     emitTo(receiverId, "typing", { senderId: userId });
@@ -39,6 +56,8 @@ io.on("connection", (socket) => {
   socket.on("stopTyping", ({ receiverId }) => {
     emitTo(receiverId, "stopTyping", { senderId: userId });
   });
+
+  // WEBRTC SIGNALING
 
   // Flow:
   //   Caller                        Receiver
@@ -84,7 +103,6 @@ io.on("connection", (socket) => {
     emitTo(to, "call:rejected", { from: userId });
   });
 
-  // DISCONNECT
   socket.on("disconnect", () => {
     console.log(`❌ Disconnected: ${socket.user.fullName}`);
     delete userSocketMap[userId];
