@@ -21,6 +21,22 @@ export const useChatStore = create((set, get) => ({
 
   typingUsers: new Set(),
 
+  // Call history
+  callHistory: [],
+  isCallHistoryLoading: false,
+
+  fetchCallHistory: async () => {
+    set({ isCallHistoryLoading: true });
+    try {
+      const res = await axiosInstance.get("/calls/history");
+      set({ callHistory: res.data });
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to load call history");
+    } finally {
+      set({ isCallHistoryLoading: false });
+    }
+  },
+
   toggleSound: () => {
     const next = !get().isSoundEnabled;
     localStorage.setItem("isSoundEnabled", JSON.stringify(next));
@@ -111,7 +127,6 @@ export const useChatStore = create((set, get) => ({
     };
     set({ messages: [...messages, optimistic] });
 
-    // Update last message preview immediately
     set((s) => ({
       lastMessages: {
         ...s.lastMessages,
@@ -130,7 +145,6 @@ export const useChatStore = create((set, get) => ({
         messages: s.messages.map((m) => (m._id === tempId ? res.data : m)),
       }));
 
-      // Move this chat to top of list
       set((s) => {
         const chats = [...s.chats];
         const idx = chats.findIndex((c) => sameId(c._id, selectedUser._id));
@@ -159,12 +173,10 @@ export const useChatStore = create((set, get) => ({
       const already = get().messages.some((m) => sameId(m._id, msg._id));
       if (already) return;
 
-      // Append to messages only if this conversation is open
       if (isFromSelectedUser || isToSelectedUser) {
         set((s) => ({ messages: [...s.messages, msg] }));
 
-        /*If the message is FROM the other person and we have their chat open,
-        immediately mark it as seen */ if (isFromSelectedUser) {
+        if (isFromSelectedUser) {
           const socket = useAuthStore.getState().socket;
           if (socket) socket.emit("msg:seen", { senderId: msg.senderId });
         }
@@ -177,7 +189,7 @@ export const useChatStore = create((set, get) => ({
           ...s.lastMessages,
           [msg.senderId]: previewText,
         },
-        //move the sender to the top
+        // Sort chats: move the sender to the top
         chats: (() => {
           const chats = [...s.chats];
           const idx = chats.findIndex((c) => sameId(c._id, msg.senderId));
@@ -198,7 +210,6 @@ export const useChatStore = create((set, get) => ({
         }));
       }
 
-      // Sound — only for messages from the other person
       if (isFromSelectedUser && isSoundEnabled) {
         const snd = new Audio("/sounds/msgSound.mp3");
         snd.volume = 0.6;
