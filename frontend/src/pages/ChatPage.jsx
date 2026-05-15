@@ -27,12 +27,10 @@ const S = {
   red: "#ff5c6a",
 };
 
-/*
-   TICKS  —
+/*TICKS  
    ✓  grey  = sending (optimistic)
    ✓✓ grey  = delivered (saved to DB, not yet seen)
-   ✓✓ green = seen (receiver opened the chat)
-*/
+   ✓✓ green = seen (receiver opened the chat) */
 function Ticks({ msg }) {
   if (msg.isOptimistic) {
     return (
@@ -295,7 +293,6 @@ function TypingDots() {
   );
 }
 
-/* USER ROW  */
 function UserRow({ user, selected, online, showMsgBtn, onClick, onMessage }) {
   const { unreadMessages, lastMessages, typingUsers } = useChatStore();
   const unread = unreadMessages[user._id] || 0;
@@ -424,7 +421,6 @@ function UserRow({ user, selected, online, showMsgBtn, onClick, onMessage }) {
         </div>
       )}
 
-      {/* Message button (contacts tab only) */}
       {showMsgBtn && (
         <button
           onClick={(e) => {
@@ -460,7 +456,6 @@ function UserRow({ user, selected, online, showMsgBtn, onClick, onMessage }) {
   );
 }
 
-/* EMPTY LIST */
 function EmptyList({ tab, onSwitch }) {
   return (
     <div style={{ padding: "40px 16px", textAlign: "center" }}>
@@ -505,7 +500,6 @@ function EmptyList({ tab, onSwitch }) {
   );
 }
 
-/*SIDEBAR */
 function Sidebar({ search, setSearch }) {
   const { authUser, logout, uploadProfile, onlineUsers } = useAuthStore();
   const {
@@ -526,7 +520,7 @@ function Sidebar({ search, setSearch }) {
 
   useEffect(() => {
     if (activeTab === "chats") getMyChatPartner();
-    else getAllContacts();
+    else if (activeTab === "contacts") getAllContacts();
   }, [activeTab]);
 
   const handlePhotoUpload = () => {
@@ -564,7 +558,6 @@ function Sidebar({ search, setSearch }) {
         overflow: "hidden",
       }}
     >
-      {/* Header */}
       <div
         style={{
           background: S.sideHdr,
@@ -685,66 +678,67 @@ function Sidebar({ search, setSearch }) {
         </div>
       </div>
 
-      {/* Search */}
-      <div style={{ padding: "10px 12px 6px", flexShrink: 0 }}>
-        <div style={{ position: "relative" }}>
-          <svg
-            width="14"
-            height="14"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke={S.text3}
-            strokeWidth="2"
-            strokeLinecap="round"
-            style={{
-              position: "absolute",
-              left: 12,
-              top: "50%",
-              transform: "translateY(-50%)",
-              pointerEvents: "none",
-            }}
-          >
-            <circle cx="11" cy="11" r="8" />
-            <path d="M21 21l-4.35-4.35" />
-          </svg>
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search conversations…"
-            autoComplete="off"
-            style={{
-              width: "100%",
-              background: S.bg3,
-              border: `1px solid ${S.border}`,
-              borderRadius: 24,
-              padding: "9px 14px 9px 34px",
-              fontSize: 13,
-              color: S.text1,
-              outline: "none",
-              fontFamily: "inherit",
-              transition: "border-color .2s, box-shadow .2s",
-            }}
-            onFocus={(e) => {
-              e.target.style.borderColor = "rgba(0,229,160,.35)";
-              e.target.style.boxShadow = "0 0 0 3px rgba(0,229,160,.08)";
-            }}
-            onBlur={(e) => {
-              e.target.style.borderColor = S.border;
-              e.target.style.boxShadow = "none";
-            }}
-          />
+      {activeTab !== "calls" && (
+        <div style={{ padding: "10px 12px 6px", flexShrink: 0 }}>
+          <div style={{ position: "relative" }}>
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke={S.text3}
+              strokeWidth="2"
+              strokeLinecap="round"
+              style={{
+                position: "absolute",
+                left: 12,
+                top: "50%",
+                transform: "translateY(-50%)",
+                pointerEvents: "none",
+              }}
+            >
+              <circle cx="11" cy="11" r="8" />
+              <path d="M21 21l-4.35-4.35" />
+            </svg>
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search conversations…"
+              autoComplete="off"
+              style={{
+                width: "100%",
+                background: S.bg3,
+                border: `1px solid ${S.border}`,
+                borderRadius: 24,
+                padding: "9px 14px 9px 34px",
+                fontSize: 13,
+                color: S.text1,
+                outline: "none",
+                fontFamily: "inherit",
+                transition: "border-color .2s, box-shadow .2s",
+              }}
+              onFocus={(e) => {
+                e.target.style.borderColor = "rgba(0,229,160,.35)";
+                e.target.style.boxShadow = "0 0 0 3px rgba(0,229,160,.08)";
+              }}
+              onBlur={(e) => {
+                e.target.style.borderColor = S.border;
+                e.target.style.boxShadow = "none";
+              }}
+            />
+          </div>
         </div>
-      </div>
+      )}
 
       <div
         style={{
           display: "flex",
-          gap: 6,
+          gap: 5,
           padding: "8px 12px 10px",
           flexShrink: 0,
         }}
       >
-        {["chats", "contacts"].map((t) => {
+        {["chats", "contacts", "calls"].map((t) => {
           const on = activeTab === t;
           return (
             <button
@@ -754,7 +748,7 @@ function Sidebar({ search, setSearch }) {
                 flex: 1,
                 padding: "7px 0",
                 borderRadius: 24,
-                fontSize: 13,
+                fontSize: 12,
                 fontWeight: 600,
                 cursor: "pointer",
                 border: on ? "none" : `1px solid ${S.border}`,
@@ -764,14 +758,20 @@ function Sidebar({ search, setSearch }) {
                 color: on ? "#000" : S.text2,
               }}
             >
-              {t === "chats" ? "Chats" : "Contacts"}
+              {t === "chats"
+                ? "Chats"
+                : t === "contacts"
+                  ? "Contacts"
+                  : "Calls"}
             </button>
           );
         })}
       </div>
 
       <div style={{ flex: 1, overflowY: "auto", padding: "0 6px 8px" }}>
-        {isUsersLoading ? (
+        {activeTab === "calls" ? (
+          <CallHistoryPanel />
+        ) : isUsersLoading ? (
           <SkeletonUserList />
         ) : filtered.length === 0 ? (
           <EmptyList
@@ -801,6 +801,261 @@ function Sidebar({ search, setSearch }) {
   );
 }
 
+/* CALL HISTORY PANEL */
+function CallHistoryPanel() {
+  const {
+    callHistory,
+    isCallHistoryLoading,
+    fetchCallHistory,
+    setSelectedUser,
+    setActiveTab,
+  } = useChatStore();
+  const { authUser } = useAuthStore();
+
+  useEffect(() => {
+    fetchCallHistory();
+  }, []);
+
+  const fmtDuration = (s) => {
+    if (!s || s === 0) return null;
+    if (s < 60) return `${s}s`;
+    return `${Math.floor(s / 60)}m ${s % 60}s`;
+  };
+
+  // Group by date
+  const groups = callHistory.reduce((acc, call) => {
+    const day = new Date(call.createdAt).toDateString();
+    if (!acc[day]) acc[day] = [];
+    acc[day].push(call);
+    return acc;
+  }, {});
+
+  const statusMeta = {
+    completed: { color: S.online, label: "Completed" },
+    missed: { color: S.red, label: "Missed" },
+    rejected: { color: S.text3, label: "Declined" },
+    failed: { color: S.text3, label: "Failed" },
+  };
+
+  if (isCallHistoryLoading) return <SkeletonUserList />;
+
+  if (callHistory.length === 0) {
+    return (
+      <div style={{ padding: "40px 16px", textAlign: "center" }}>
+        <div style={{ fontSize: 36, marginBottom: 12 }}>📞</div>
+        <p
+          style={{
+            fontSize: 14,
+            fontWeight: 500,
+            color: S.text1,
+            margin: "0 0 6px",
+          }}
+        >
+          No calls yet
+        </p>
+        <p style={{ fontSize: 12, color: S.text3, margin: 0 }}>
+          Your call history will appear here
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column" }}>
+      {Object.entries(groups).map(([day, calls]) => (
+        <div key={day}>
+          <div
+            style={{
+              padding: "10px 12px 6px",
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+            }}
+          >
+            <div style={{ flex: 1, height: 1, background: S.border }} />
+            <span
+              style={{
+                fontSize: 11,
+                color: S.text3,
+                fontWeight: 500,
+                whiteSpace: "nowrap",
+              }}
+            >
+              {new Date(day).toDateString() === new Date().toDateString()
+                ? "Today"
+                : new Date(day).toDateString() ===
+                    new Date(Date.now() - 86400000).toDateString()
+                  ? "Yesterday"
+                  : new Date(day).toLocaleDateString([], {
+                      weekday: "short",
+                      month: "short",
+                      day: "numeric",
+                    })}
+            </span>
+            <div style={{ flex: 1, height: 1, background: S.border }} />
+          </div>
+
+          {calls.map((call) => {
+            const meta = statusMeta[call.status] || statusMeta.failed;
+            const dur = fmtDuration(call.duration);
+            const isVideo = call.type === "video";
+            const isOutgoing = call.isCaller;
+            const isMissed = call.status === "missed" && !isOutgoing;
+
+            return (
+              <div
+                key={call._id}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 11,
+                  padding: "10px 10px",
+                  borderRadius: 14,
+                  cursor: "pointer",
+                  transition: "background .15s",
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.background = S.bg3)}
+                onMouseLeave={(e) =>
+                  (e.currentTarget.style.background = "transparent")
+                }
+              >
+                {/* Avatar */}
+                <div style={{ position: "relative", flexShrink: 0 }}>
+                  <Avatar
+                    name={call.peer?.fullName}
+                    src={call.peer?.profilePic}
+                    size={46}
+                  />
+
+                  <div
+                    style={{
+                      position: "absolute",
+                      bottom: -2,
+                      right: -2,
+                      width: 18,
+                      height: 18,
+                      borderRadius: "50%",
+                      background: S.bg4,
+                      border: `1px solid ${S.border}`,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontSize: 9,
+                    }}
+                  >
+                    {isVideo ? "📹" : "📞"}
+                  </div>
+                </div>
+
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div
+                    style={{
+                      fontSize: 14,
+                      fontWeight: 600,
+                      color: isMissed ? S.red : S.text1,
+                      whiteSpace: "nowrap",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      marginBottom: 3,
+                    }}
+                  >
+                    {call.peer?.fullName || "Unknown"}
+                  </div>
+                  <div
+                    style={{ display: "flex", alignItems: "center", gap: 5 }}
+                  >
+                    <svg
+                      width="12"
+                      height="12"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke={isMissed ? S.red : S.text3}
+                      strokeWidth="2.5"
+                      strokeLinecap="round"
+                    >
+                      {isOutgoing ? (
+                        <>
+                          <line x1="7" y1="17" x2="17" y2="7" />
+                          <polyline points="7 7 17 7 17 17" />
+                        </>
+                      ) : (
+                        <>
+                          <line x1="17" y1="7" x2="7" y2="17" />
+                          <polyline points="17 17 7 17 7 7" />
+                        </>
+                      )}
+                    </svg>
+                    <span
+                      style={{
+                        fontSize: 12,
+                        color: isMissed ? S.red : S.text3,
+                      }}
+                    >
+                      {isOutgoing
+                        ? "Outgoing"
+                        : isMissed
+                          ? "Missed"
+                          : "Incoming"}
+                      {dur && ` · ${dur}`}
+                    </span>
+                  </div>
+                </div>
+
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "flex-end",
+                    gap: 6,
+                    flexShrink: 0,
+                  }}
+                >
+                  <span style={{ fontSize: 11, color: S.text3 }}>
+                    {new Date(call.createdAt).toLocaleTimeString([], {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                      hour12: true,
+                    })}
+                  </span>
+
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedUser(call.peer);
+                      setActiveTab("chats");
+                    }}
+                    title="Open chat"
+                    style={{
+                      padding: "3px 10px",
+                      borderRadius: 100,
+                      fontSize: 11,
+                      fontWeight: 600,
+                      background: S.accentDim,
+                      border: `1px solid rgba(0,229,160,.2)`,
+                      color: S.accent,
+                      cursor: "pointer",
+                      fontFamily: "inherit",
+                      transition: "all .2s",
+                    }}
+                    onMouseEnter={(e) =>
+                      (e.currentTarget.style.background = "rgba(0,229,160,.2)")
+                    }
+                    onMouseLeave={(e) =>
+                      (e.currentTarget.style.background = S.accentDim)
+                    }
+                  >
+                    Chat
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function HdrBtn({ onClick, title, children }) {
   return (
     <button
@@ -827,7 +1082,7 @@ function HdrBtn({ onClick, title, children }) {
   );
 }
 
-/*MESSAGE INPUT */
+/* MESSAGE INPUT  (with typing emit) */
 function MessageInput() {
   const [text, setText] = useState("");
   const [img, setImg] = useState(null);
@@ -989,7 +1244,6 @@ function MessageInput() {
           </svg>
         </button>
 
-        {/* Input */}
         <div style={{ flex: 1, position: "relative" }}>
           <input
             value={text}
@@ -1025,7 +1279,6 @@ function MessageInput() {
           )}
         </div>
 
-        {/* Send */}
         <button
           onClick={doSend}
           disabled={!can}
@@ -1199,11 +1452,11 @@ function ChatHeader({ selectedUser, isOnline, isTyping, onClose }) {
             >
               {isTyping ? (
                 <>
-                
+                  <TypingDots />
                   <span style={{ marginLeft: 4 }}>typing…</span>
                 </>
               ) : isOnline ? (
-                "● Online "
+                "● Online"
               ) : (
                 "Offline"
               )}
@@ -1211,7 +1464,6 @@ function ChatHeader({ selectedUser, isOnline, isTyping, onClose }) {
           </div>
         </div>
 
-        {/* Action buttons */}
         <div
           style={{
             display: "flex",
@@ -1584,7 +1836,6 @@ function CallOverlay({ user, type, isCaller, onEnd }) {
   const localVideoRef = useRef(null);
   const remoteVideoRef = useRef(null);
   const hangupRef = useRef(null);
-
   const STUN = {
     iceServers: [
       { urls: "stun:stun.l.google.com:19302" },
@@ -1604,7 +1855,6 @@ function CallOverlay({ user, type, isCaller, onEnd }) {
     onEnd();
   };
   hangupRef.current = hangup;
-
   const createPC = (stream) => {
     const pc = new RTCPeerConnection(STUN);
     pcRef.current = pc;
@@ -1657,6 +1907,7 @@ function CallOverlay({ user, type, isCaller, onEnd }) {
         const pc = createPC(stream);
 
         if (isCaller) {
+          const offer = await pc.createOffer();
           await pc.setLocalDescription(offer);
           socket.emit("call:offer", { to: user._id, offer, type });
         }
@@ -2013,6 +2264,7 @@ function CallOverlay({ user, type, isCaller, onEnd }) {
           </CallCtrlBtn>
         )}
 
+        {/* End call */}
         <button
           onClick={() => hangup(true)}
           style={{
