@@ -1452,7 +1452,6 @@ function ChatHeader({ selectedUser, isOnline, isTyping, onClose }) {
             >
               {isTyping ? (
                 <>
-                  <TypingDots />
                   <span style={{ marginLeft: 4 }}>typing…</span>
                 </>
               ) : isOnline ? (
