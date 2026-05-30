@@ -1884,90 +1884,92 @@ function CallOverlay({ user, type, isCaller, onEnd }) {
     return pc;
   };
 
-  useEffect(() => {
-    if (!socket) return;
-    let cancelled = false;
+ useEffect(() => {
+  if (!socket) return;
+  let cancelled = false;
 
-    const startMedia = async () => {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          audio: true,
-          video: type === "video",
-        });
+  const startMedia = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: true,
+        video: type === "video",
+      });
 
-        if (cancelled) {
-          stream.getTracks().forEach((t) => t.stop());
-          return;
-        }
-
-        localStreamRef.current = stream;
-        if (localVideoRef.current) localVideoRef.current.srcObject = stream;
-
-        const pc = createPC(stream);
-
-        if (isCaller) {
-          const offer = await pc.createOffer();
-          await pc.setLocalDescription(offer);
-          socket.emit("call:offer", { to: user._id, offer, type });
-        }
-      } catch (err) {
-        if (cancelled) return;
-        console.error("Media error:", err);
-
-        if (err.name === "NotAllowedError") {
-          toast.error("Please allow microphone/camera access and try again.");
-        } else if (err.name === "NotFoundError") {
-          toast.error("No microphone or camera found on this device.");
-        } else {
-          toast.error("Could not start call: " + err.message);
-        }
-        hangupRef.current(false);
+      if (cancelled) {
+        stream.getTracks().forEach((t) => t.stop());
+        return;
       }
-    };
 
-    startMedia();
+      localStreamRef.current = stream;
+      if (localVideoRef.current) localVideoRef.current.srcObject = stream;
 
-    const onOffer = async ({ offer, from }) => {
-      const pc = pcRef.current;
-      if (!pc || isCaller) return;
-      await pc.setRemoteDescription(new RTCSessionDescription(offer));
-      const answer = await pc.createAnswer();
-      await pc.setLocalDescription(answer);
-      socket.emit("call:answer", { to: from, answer });
-    };
+      const pc = createPC(stream);
 
-    const onAnswer = async ({ answer }) => {
-      const pc = pcRef.current;
-      if (!pc) return;
-      await pc.setRemoteDescription(new RTCSessionDescription(answer));
-    };
+      if (isCaller) {
+        const offer = await pc.createOffer();
+        await pc.setLocalDescription(offer);
+        socket.emit("call:offer", { to: user._id, offer, type });
+      }
+    } catch (err) {
+      if (cancelled) return;
+      console.error("Media error:", err);
 
-    const onIce = async ({ candidate }) => {
-      const pc = pcRef.current;
-      if (!pc) return;
-      try {
-        await pc.addIceCandidate(new RTCIceCandidate(candidate));
-      } catch {}
-    };
-
-    const onEnded = () => hangupRef.current(false);
-
-    socket.on("call:offer", onOffer);
-    socket.on("call:answer", onAnswer);
-    socket.on("call:ice-candidate", onIce);
-    socket.on("call:ended", onEnded);
-    socket.on("call:rejected", onEnded);
-
-    return () => {
-      cancelled = true;
-      socket.off("call:offer", onOffer);
-      socket.off("call:answer", onAnswer);
-      socket.off("call:ice-candidate", onIce);
-      socket.off("call:ended", onEnded);
-      socket.off("call:rejected", onEnded);
+      if (err.name === "NotAllowedError") {
+        toast.error("Please allow microphone/camera access and try again.");
+      } else if (err.name === "NotFoundError") {
+        toast.error("No microphone or camera found on this device.");
+      } else {
+        toast.error("Could not start call: " + err.message);
+      }
       hangupRef.current(false);
-    };
-  }, [socket]);
+    }
+  };
+
+  startMedia();
+
+  const onOffer = async ({ offer, from }) => {
+    const pc = pcRef.current;
+    if (!pc || isCaller) return;
+    await pc.setRemoteDescription(new RTCSessionDescription(offer));
+    const answer = await pc.createAnswer();
+    await pc.setLocalDescription(answer);
+    socket.emit("call:answer", { to: from, answer });
+  };
+
+  const onAnswer = async ({ answer }) => {
+    const pc = pcRef.current;
+    if (!pc) return;
+    await pc.setRemoteDescription(new RTCSessionDescription(answer));
+  };
+
+  const onIce = async ({ candidate }) => {
+    const pc = pcRef.current;
+    if (!pc) return;
+    try {
+      await pc.addIceCandidate(new RTCIceCandidate(candidate));
+    } catch {}
+  };
+
+  const onEnded = () => hangupRef.current(false);
+
+  socket.on("call:offer", onOffer);
+  socket.on("call:answer", onAnswer);
+  socket.on("call:ice-candidate", onIce);
+  socket.on("call:ended", onEnded);
+  socket.on("call:rejected", onEnded);
+
+  return () => {
+    cancelled = true;
+    socket.off("call:offer", onOffer);
+    socket.off("call:answer", onAnswer);
+    socket.off("call:ice-candidate", onIce);
+    socket.off("call:ended", onEnded);
+    socket.off("call:rejected", onEnded);
+    
+    localStreamRef.current?.getTracks().forEach((t) => t.stop());
+    pcRef.current?.close();
+  };
+}, [socket]);
 
   useEffect(() => {
     if (status !== "connected") return;
@@ -1992,313 +1994,313 @@ function CallOverlay({ user, type, isCaller, onEnd }) {
   const isVideo = type === "video";
   const isConnected = status === "connected";
 
-  return (
-    <div
-      style={{
-        position: "fixed",
-        inset: 0,
-        zIndex: 200,
-        background: isVideo ? "#000" : "rgba(10,14,20,.96)",
-        backdropFilter: isVideo ? "none" : "blur(16px)",
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
-        animation: "_fd .2s ease both",
-      }}
-    >
-      {isVideo && (
-        <>
-          <video
-            ref={remoteVideoRef}
-            autoPlay
-            playsInline
-            style={{
-              position: "absolute",
-              inset: 0,
-              width: "100%",
-              height: "100%",
-              objectFit: "cover",
-              zIndex: 0,
-            }}
-          />
-
-          <video
-            ref={localVideoRef}
-            autoPlay
-            playsInline
-            muted
-            style={{
-              position: "absolute",
-              bottom: 100,
-              right: 20,
-              width: 160,
-              height: 100,
-              borderRadius: 12,
-              objectFit: "cover",
-              zIndex: 2,
-              border: `2px solid ${S.border}`,
-              boxShadow: "0 4px 20px rgba(0,0,0,.6)",
-            }}
-          />
-        </>
-      )}
-
-      {!isVideo && <audio ref={remoteVideoRef} autoPlay />}
-
-      <div
-        style={{
-          position: "relative",
-          zIndex: 3,
-          textAlign: "center",
-          display: isVideo && isConnected ? "none" : "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          gap: 16,
-        }}
-      >
-        <div
-          style={{
-            width: 120,
-            height: 120,
-            borderRadius: "50%",
-            animation: "_ring 2s ease infinite",
-          }}
-        >
-          <Avatar name={user?.fullName} src={user?.profilePic} size={120} />
-        </div>
-        <style>{`@keyframes _ring{0%,100%{box-shadow:0 0 0 4px ${S.accent}40,0 0 0 10px ${S.accent}18}50%{box-shadow:0 0 0 8px ${S.accent}30,0 0 0 18px ${S.accent}08}}`}</style>
-
-        <div>
-          <div
-            style={{
-              fontSize: 24,
-              fontWeight: 700,
-              color: S.text1,
-              marginBottom: 6,
-            }}
-          >
-            {user?.fullName}
-          </div>
-          <div
-            style={{
-              fontSize: 14,
-              color: isConnected ? S.accent : S.text2,
-              fontWeight: 500,
-            }}
-          >
-            {isConnected ? fmt(elapsed) : status}
-          </div>
-          <div style={{ fontSize: 12, color: S.text3, marginTop: 4 }}>
-            {isVideo ? "📹 Video call" : "📞 Voice call"}
-          </div>
-        </div>
-      </div>
-
-      {isVideo && isConnected && (
+ 
+ return (
+  <div
+    style={{
+      position: "fixed",
+      inset: 0,
+      zIndex: 200,
+      background: isVideo ? "#000" : "#111B21",
+      overflow: "hidden",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+    }}
+  >
+    {/* Voice Call Background */}
+    {!isVideo && (
+      <>
         <div
           style={{
             position: "absolute",
-            top: 16,
-            left: "50%",
-            transform: "translateX(-50%)",
-            zIndex: 3,
-            background: "rgba(0,0,0,.5)",
-            backdropFilter: "blur(8px)",
-            borderRadius: 100,
-            padding: "6px 16px",
-            display: "flex",
-            alignItems: "center",
-            gap: 8,
+            inset: 0,
+            backgroundImage: user?.profilePic
+              ? `url(${user.profilePic})`
+              : "none",
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+            filter: "blur(35px)",
+            transform: "scale(1.2)",
+            opacity: 0.4,
           }}
-        >
-          <span
-            style={{
-              width: 8,
-              height: 8,
-              borderRadius: "50%",
-              background: S.accent,
-              boxShadow: `0 0 6px ${S.accent}`,
-            }}
-          />
-          <span style={{ fontSize: 13, fontWeight: 600, color: "white" }}>
-            {fmt(elapsed)}
-          </span>
-        </div>
-      )}
+        />
+
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            background:
+              "linear-gradient(to bottom, rgba(0,0,0,.7), rgba(0,0,0,.85))",
+          }}
+        />
+      </>
+    )}
+
+    {/* Video Call Remote Stream */}
+    {isVideo && (
+      <>
+        <video
+          ref={remoteVideoRef}
+          autoPlay
+          playsInline
+          style={{
+            position: "absolute",
+            inset: 0,
+            width: "100%",
+            height: "100%",
+            objectFit: "cover",
+            zIndex: 0,
+            background: "#000",
+          }}
+        />
+
+        {/* Bottom Gradient */}
+        <div
+          style={{
+            position: "absolute",
+            left: 0,
+            right: 0,
+            bottom: 0,
+            height: 240,
+            background:
+              "linear-gradient(to top, rgba(0,0,0,.9), rgba(0,0,0,0))",
+            zIndex: 1,
+            pointerEvents: "none",
+          }}
+        />
+
+        {/* Local Video */}
+        <video
+          ref={localVideoRef}
+          autoPlay
+          playsInline
+          muted
+          style={{
+            position: "absolute",
+            top: 20,
+            right: 20,
+            width: 120,
+            height: 180,
+            borderRadius: 16,
+            objectFit: "cover",
+            zIndex: 5,
+            border: "2px solid rgba(255,255,255,.15)",
+            boxShadow: "0 8px 30px rgba(0,0,0,.5)",
+            background: "#222",
+          }}
+        />
+      </>
+    )}
+
+    {!isVideo && <audio ref={remoteVideoRef} autoPlay />}
+
+    {/* Contact Info */}
+    <div
+      style={{
+        position: "relative",
+        zIndex: 4,
+        textAlign: "center",
+        display: isVideo && isConnected ? "none" : "flex",
+        flexDirection: "column",
+        alignItems: "center",
+      }}
+    >
+      <div
+        style={{
+          width: 140,
+          height: 140,
+          borderRadius: "50%",
+          overflow: "hidden",
+          marginBottom: 24,
+          boxShadow: "0 10px 40px rgba(0,0,0,.4)",
+          animation: "_pulse 2s infinite",
+        }}
+      >
+        <Avatar
+          name={user?.fullName}
+          src={user?.profilePic}
+          size={140}
+        />
+      </div>
+
+      <style>{`
+        @keyframes _pulse{
+          0%,100%{
+            transform:scale(1);
+          }
+          50%{
+            transform:scale(1.04);
+          }
+        }
+      `}</style>
 
       <div
         style={{
-          position: "absolute",
-          bottom: 36,
-          left: "50%",
-          transform: "translateX(-50%)",
-          zIndex: 3,
-          display: "flex",
-          alignItems: "center",
-          gap: 14,
-          background: "rgba(0,0,0,.55)",
-          backdropFilter: "blur(12px)",
-          borderRadius: 24,
-          padding: "12px 20px",
-          border: `1px solid rgba(255,255,255,.08)`,
+          fontSize: 32,
+          fontWeight: 700,
+          color: "#fff",
+          marginBottom: 8,
         }}
       >
-        {/* Mute */}
-        <CallCtrlBtn
-          active={muted}
-          onClick={toggleMute}
-          title={muted ? "Unmute" : "Mute"}
-        >
-          {muted ? (
-            <svg
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-            >
-              <line x1="1" y1="1" x2="23" y2="23" />
-              <path d="M9 9v3a3 3 0 005.12 2.12M15 9.34V4a3 3 0 00-5.94-.6" />
-              <path d="M17 16.95A7 7 0 015 12v-2m14 0v2a7 7 0 01-.11 1.23M12 19v4M8 23h8" />
-            </svg>
-          ) : (
-            <svg
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-            >
-              <path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z" />
-              <path d="M19 10v2a7 7 0 01-14 0v-2M12 19v4M8 23h8" />
-            </svg>
-          )}
-          <span style={{ fontSize: 11, marginTop: 3 }}>
-            {muted ? "Unmute" : "Mute"}
-          </span>
-        </CallCtrlBtn>
+        {user?.fullName}
+      </div>
 
-        {/* Speaker (audio only) */}
-        {!isVideo && (
-          <CallCtrlBtn
-            active={!speaker}
-            onClick={() => setSpeaker((v) => !v)}
-            title="Speaker"
-          >
-            {speaker ? (
-              <svg
-                width="18"
-                height="18"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-              >
-                <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
-                <path d="M19.07 4.93a10 10 0 010 14.14M15.54 8.46a5 5 0 010 7.07" />
-              </svg>
-            ) : (
-              <svg
-                width="18"
-                height="18"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-              >
-                <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
-                <line x1="23" y1="9" x2="17" y2="15" />
-                <line x1="17" y1="9" x2="23" y2="15" />
-              </svg>
-            )}
-            <span style={{ fontSize: 11, marginTop: 3 }}>Speaker</span>
-          </CallCtrlBtn>
-        )}
+      <div
+        style={{
+          fontSize: 16,
+          color: "#D1D5DB",
+          marginBottom: 8,
+        }}
+      >
+        {isConnected ? fmt(elapsed) : status}
+      </div>
 
-        {/* Camera (video only) */}
-        {isVideo && (
-          <CallCtrlBtn
-            active={camOff}
-            onClick={toggleCam}
-            title={camOff ? "Turn on camera" : "Turn off camera"}
-          >
-            {camOff ? (
-              <svg
-                width="18"
-                height="18"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-              >
-                <line x1="1" y1="1" x2="23" y2="23" />
-                <path d="M21 21H3a2 2 0 01-2-2V8a2 2 0 012-2h3m3-3h6l2 3h3a2 2 0 012 2v9.34" />
-                <path d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-              </svg>
-            ) : (
-              <svg
-                width="18"
-                height="18"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-              >
-                <polygon points="23 7 16 12 23 17 23 7" />
-                <rect x="1" y="5" width="15" height="14" rx="2" ry="2" />
-              </svg>
-            )}
-            <span style={{ fontSize: 11, marginTop: 3 }}>
-              {camOff ? "Camera off" : "Camera"}
-            </span>
-          </CallCtrlBtn>
-        )}
-
-        {/* End call */}
-        <button
-          onClick={() => hangup(true)}
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            gap: 3,
-            width: 64,
-            height: 64,
-            borderRadius: "50%",
-            border: "none",
-            background: S.red,
-            cursor: "pointer",
-            color: "white",
-            fontSize: 11,
-            fontWeight: 600,
-            fontFamily: "inherit",
-            boxShadow: `0 4px 20px ${S.red}70`,
-            transition: "transform .15s",
-          }}
-          onMouseEnter={(e) =>
-            (e.currentTarget.style.transform = "scale(1.08)")
-          }
-          onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
-        >
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="white">
-            <path d="M23.36 14.6c-.23-.22-5.3-3.8-6.48-3.57-.57.12-1 .56-1.83 1.6-.13.17-.46.54-.7.76a9.67 9.67 0 01-2.15-1.26 9.37 9.37 0 01-1.27-2.14c.23-.25.6-.58.77-.72 1.03-.83 1.47-1.27 1.59-1.84.22-1.18-3.38-6.27-3.6-6.5A2 2 0 008.24.99C6.5.99 1 7.96 1 9.23c0 .08.02 8.65 10.7 13.64C16.1 25 20.7 23 21.6 22.5l.06-.04A2 2 0 0023.36 14.6z" />
-          </svg>
-          End
-        </button>
+      <div
+        style={{
+          fontSize: 14,
+          color: "#AEBAC1",
+        }}
+      >
+        {isVideo ? "📹 Video Call" : "📞 Voice Call"}
       </div>
     </div>
-  );
-}
 
+    {/* Video Timer */}
+    {isVideo && isConnected && (
+      <div
+        style={{
+          position: "absolute",
+          top: 30,
+          left: "50%",
+          transform: "translateX(-50%)",
+          zIndex: 6,
+          background: "rgba(0,0,0,.45)",
+          backdropFilter: "blur(12px)",
+          padding: "8px 18px",
+          borderRadius: 999,
+          color: "#fff",
+          fontWeight: 600,
+          fontSize: 14,
+        }}
+      >
+        {fmt(elapsed)}
+      </div>
+    )}
+
+    {/* Controls */}
+    <div
+      style={{
+        position: "absolute",
+        bottom: 40,
+        left: "50%",
+        transform: "translateX(-50%)",
+        zIndex: 10,
+        display: "flex",
+        alignItems: "center",
+        gap: 18,
+      }}
+    >
+      {/* Mute */}
+      <CallCtrlBtn
+        active={muted}
+        onClick={toggleMute}
+        title={muted ? "Unmute" : "Mute"}
+      >
+        <div
+          style={{
+            width: 58,
+            height: 58,
+            borderRadius: "50%",
+            background: "rgba(255,255,255,.15)",
+            backdropFilter: "blur(12px)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          {muted ? "🔇" : "🎤"}
+        </div>
+      </CallCtrlBtn>
+
+      {/* Speaker */}
+      {!isVideo && (
+        <CallCtrlBtn
+          active={!speaker}
+          onClick={() => setSpeaker((v) => !v)}
+          title="Speaker"
+        >
+          <div
+            style={{
+              width: 58,
+              height: 58,
+              borderRadius: "50%",
+              background: "rgba(255,255,255,.15)",
+              backdropFilter: "blur(12px)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontSize: 22,
+            }}
+          >
+            {speaker ? "🔊" : "🔈"}
+          </div>
+        </CallCtrlBtn>
+      )}
+
+      {/* Camera */}
+      {isVideo && (
+        <CallCtrlBtn
+          active={camOff}
+          onClick={toggleCam}
+          title="Camera"
+        >
+          <div
+            style={{
+              width: 58,
+              height: 58,
+              borderRadius: "50%",
+              background: "rgba(255,255,255,.15)",
+              backdropFilter: "blur(12px)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontSize: 22,
+            }}
+          >
+            {camOff ? "📷❌" : "📷"}
+          </div>
+        </CallCtrlBtn>
+      )}
+
+      {/* End Call */}
+      <button
+        onClick={() => hangup(true)}
+        style={{
+          width: 72,
+          height: 72,
+          borderRadius: "50%",
+          border: "none",
+          background: "#FF3B30",
+          color: "#fff",
+          cursor: "pointer",
+          fontSize: 26,
+          boxShadow: "0 8px 25px rgba(255,59,48,.45)",
+          transition: "all .2s ease",
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.transform = "scale(1.08)";
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.transform = "scale(1)";
+        }}
+      >
+        📞
+      </button>
+    </div>
+  </div>
+);
+}
 function CallCtrlBtn({ onClick, active, title, children }) {
   return (
     <button
@@ -2336,24 +2338,49 @@ function CallCtrlBtn({ onClick, active, title, children }) {
 }
 
 function CallManager() {
-  const { socket, authUser } = useAuthStore();
+  const { socket } = useAuthStore();
+
   const [incoming, setIncoming] = useState(null);
   const [active, setActive] = useState(null);
 
   useEffect(() => {
     if (!socket) return;
 
-    const onIncoming = ({ from, callerName, callerPic, type, offer }) => {
-      setIncoming({ callerId: from, callerName, callerPic, type, offer });
+    const onIncoming = ({
+      from,
+      callerName,
+      callerPic,
+      type,
+      offer,
+      callId,
+    }) => {
+      console.log("Incoming call:", {
+        from,
+        callerName,
+        type,
+        callId,
+      });
+
+      setIncoming({
+        callerId: from,
+        callerName,
+        callerPic,
+        type,
+        offer,
+        callId,
+      });
     };
 
-    const onEnded = () => {
+    const onEnded = (data) => {
+      console.log("Call ended:", data);
+
       setIncoming(null);
       setActive(null);
     };
 
     socket.on("call:incoming", onIncoming);
     socket.on("call:ended", onEnded);
+
     return () => {
       socket.off("call:incoming", onIncoming);
       socket.off("call:ended", onEnded);
@@ -2361,9 +2388,15 @@ function CallManager() {
   }, [socket]);
 
   const acceptCall = () => {
-    if (!incoming) return;
+    if (!incoming || !socket) return;
 
-    socket.emit("call:accept", { to: incoming.callerId });
+    console.log("Accepting call:", incoming);
+
+    socket.emit("call:accept", {
+      to: incoming.callerId,
+      callId: incoming.callId,
+    });
+
     setActive({
       user: {
         _id: incoming.callerId,
@@ -2373,13 +2406,32 @@ function CallManager() {
       type: incoming.type,
       isCaller: false,
       offer: incoming.offer,
+      callId: incoming.callId,
     });
+
     setIncoming(null);
   };
 
   const rejectCall = () => {
-    if (incoming) socket.emit("call:reject", { to: incoming.callerId });
+    if (!incoming || !socket) return;
+
+    socket.emit("call:reject", {
+      to: incoming.callerId,
+      callId: incoming.callId,
+    });
+
     setIncoming(null);
+  };
+
+  const endCall = () => {
+    if (active?.user?._id) {
+      socket.emit("call:end", {
+        to: active.user._id,
+        callId: active.callId,
+      });
+    }
+
+    setActive(null);
   };
 
   return (
@@ -2391,12 +2443,15 @@ function CallManager() {
           onReject={rejectCall}
         />
       )}
+
       {active && (
         <CallOverlay
           user={active.user}
           type={active.type}
           isCaller={active.isCaller}
-          onEnd={() => setActive(null)}
+          offer={active.offer}
+          callId={active.callId}
+          onEnd={endCall}
         />
       )}
     </>
