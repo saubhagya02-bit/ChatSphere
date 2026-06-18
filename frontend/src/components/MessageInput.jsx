@@ -1,6 +1,8 @@
 import { useState, useRef } from "react";
 import { useChatStore } from "../store/useChatStore";
+import { useAuthStore } from "../store/useAuthStore";
 import useKeyboardSound from "../hooks/useKeyboardSound";
+import { isUserBlocked } from "../lib/utils";
 import toast from "react-hot-toast";
 
 const MAX = 200;
@@ -9,7 +11,9 @@ function MessageInput() {
   const [text, setText] = useState("");
   const [img, setImg] = useState(null);
   const fileRef = useRef(null);
-  const { sendMessage } = useChatStore();
+  const { sendMessage, emitTyping, emitStopTyping, selectedUser } =
+    useChatStore();
+  const { authUser } = useAuthStore();
   const { playClick, playMessageSent } = useKeyboardSound();
 
   const handleSend = async (e) => {
@@ -44,6 +48,25 @@ function MessageInput() {
 
   const near = text.length > 150;
   const over = text.length >= MAX;
+  const blocked = isUserBlocked(authUser, selectedUser?._id);
+
+  if (selectedUser?.isBlocked) {
+    return (
+      <div
+        style={{
+          padding: "14px 16px 16px",
+          borderTop: `1px solid ${S.border}`,
+          background: S.chatBg,
+          flexShrink: 0,
+          textAlign: "center",
+        }}
+      >
+        <p style={{ fontSize: 13, color: S.text3, margin: 0 }}>
+          You blocked this contact. Unblock them from the menu to send messages.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div
