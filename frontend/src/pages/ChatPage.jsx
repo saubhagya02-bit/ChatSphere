@@ -1330,13 +1330,276 @@ function MessageInput() {
   );
 }
 
+function ProfileModal({ user, isOnline, onClose, onBlockToggle }) {
+  if (!user) return null;
+  const joined = user.createdAt
+    ? new Date(user.createdAt).toLocaleDateString([], {
+        year: "numeric",
+        month: "long",
+      })
+    : null;
+
+  return (
+    <div
+      style={{
+        position: "fixed",
+        inset: 0,
+        background: "rgba(0,0,0,.6)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        zIndex: 250,
+        padding: 20,
+      }}
+      onClick={onClose}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          width: "100%",
+          maxWidth: 360,
+          background: S.bg3,
+          border: `1px solid ${S.border}`,
+          borderRadius: 18,
+          padding: "28px 24px",
+          textAlign: "center",
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "center",
+            marginBottom: 16,
+          }}
+        >
+          <Avatar
+            name={user.fullName}
+            src={user.profilePic}
+            size={88}
+            online={isOnline}
+            dot
+          />
+        </div>
+        <h2
+          style={{
+            fontSize: 18,
+            fontWeight: 700,
+            color: S.text1,
+            margin: "0 0 4px",
+          }}
+        >
+          {user.fullName}
+        </h2>
+        <p
+          style={{
+            fontSize: 13,
+            color: user.isBlocked ? S.red : isOnline ? S.online : S.text3,
+            margin: "0 0 18px",
+          }}
+        >
+          {user.isBlocked
+            ? "🚫 Blocked"
+            : isOnline
+              ? "● Online now"
+              : "Offline"}
+        </p>
+
+        <div
+          style={{
+            textAlign: "left",
+            background: S.bg4,
+            borderRadius: 12,
+            padding: "14px 16px",
+            marginBottom: 20,
+          }}
+        >
+          <div
+            style={{
+              fontSize: 11,
+              color: S.text3,
+              textTransform: "uppercase",
+              letterSpacing: ".06em",
+              marginBottom: 4,
+            }}
+          >
+            Email
+          </div>
+          <div
+            style={{
+              fontSize: 14,
+              color: S.text1,
+              marginBottom: joined ? 14 : 0,
+            }}
+          >
+            {user.email}
+          </div>
+          {joined && (
+            <>
+              <div
+                style={{
+                  fontSize: 11,
+                  color: S.text3,
+                  textTransform: "uppercase",
+                  letterSpacing: ".06em",
+                  marginBottom: 4,
+                }}
+              >
+                Member since
+              </div>
+              <div style={{ fontSize: 14, color: S.text1 }}>{joined}</div>
+            </>
+          )}
+        </div>
+
+        <div style={{ display: "flex", gap: 10 }}>
+          <button
+            onClick={onBlockToggle}
+            style={{
+              flex: 1,
+              padding: 10,
+              borderRadius: 10,
+              border: `1px solid ${S.border}`,
+              background: "transparent",
+              color: user.isBlocked ? S.accent : S.red,
+              fontSize: 13,
+              fontWeight: 600,
+              cursor: "pointer",
+              fontFamily: "inherit",
+            }}
+          >
+            {user.isBlocked ? "Unblock" : "Block"}
+          </button>
+          <button
+            onClick={onClose}
+            style={{
+              flex: 1,
+              padding: 10,
+              borderRadius: 10,
+              border: "none",
+              background: S.accent,
+              color: "#000",
+              fontSize: 13,
+              fontWeight: 700,
+              cursor: "pointer",
+              fontFamily: "inherit",
+            }}
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ConfirmModal({
+  title,
+  message,
+  confirmLabel = "Confirm",
+  danger = false,
+  onConfirm,
+  onCancel,
+}) {
+  return (
+    <div
+      style={{
+        position: "fixed",
+        inset: 0,
+        background: "rgba(0,0,0,.6)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        zIndex: 260,
+        padding: 20,
+      }}
+      onClick={onCancel}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          width: "100%",
+          maxWidth: 360,
+          background: S.bg3,
+          border: `1px solid ${S.border}`,
+          borderRadius: 16,
+          padding: 22,
+        }}
+      >
+        <h3
+          style={{
+            fontSize: 16,
+            fontWeight: 700,
+            color: S.text1,
+            margin: "0 0 8px",
+          }}
+        >
+          {title}
+        </h3>
+        <p
+          style={{
+            fontSize: 13,
+            color: S.text2,
+            lineHeight: 1.5,
+            margin: "0 0 20px",
+          }}
+        >
+          {message}
+        </p>
+        <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
+          <button
+            onClick={onCancel}
+            style={{
+              padding: "9px 16px",
+              borderRadius: 10,
+              border: `1px solid ${S.border}`,
+              background: "transparent",
+              color: S.text2,
+              fontSize: 13,
+              cursor: "pointer",
+              fontFamily: "inherit",
+            }}
+          >
+            Cancel
+          </button>
+          <button
+            onClick={onConfirm}
+            style={{
+              padding: "9px 16px",
+              borderRadius: 10,
+              border: "none",
+              background: danger ? S.red : S.accent,
+              color: danger ? "#fff" : "#000",
+              fontSize: 13,
+              fontWeight: 700,
+              cursor: "pointer",
+              fontFamily: "inherit",
+            }}
+          >
+            {confirmLabel}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /*CHAT HEADER  */
 function ChatHeader({ selectedUser, isOnline, isTyping, onClose }) {
   const [menuOpen, setMenuOpen] = useState(false);
-  const [searching, setSearching] = useState(false);
-  const [searchTerm, setSearchTerm] = useState("");
+  const [showProfile, setShowProfile] = useState(false);
+  const [confirmAction, setConfirmAction] = useState(null); // "block" | "clear" | null
   const [calling, setCalling] = useState(null);
   const { socket, authUser } = useAuthStore();
+  const {
+    isSearchOpen,
+    searchQuery,
+    toggleSearch,
+    closeSearch,
+    setSearchQuery,
+    blockContact,
+    unblockContact,
+    clearChat,
+  } = useChatStore();
   const menuRef = useRef(null);
   const searchRef = useRef(null);
 
@@ -1360,33 +1623,41 @@ function ChatHeader({ selectedUser, isOnline, isTyping, onClose }) {
   }, []);
 
   useEffect(() => {
-    if (searching) searchRef.current?.focus();
-  }, [searching]);
+    if (isSearchOpen) searchRef.current?.focus();
+  }, [isSearchOpen]);
+
+  const startCall = (type) => {
+    if (selectedUser?.isBlocked) {
+      toast.error("Unblock this contact to call them");
+      return;
+    }
+    setCalling(type);
+  };
+
+  const handleBlockToggle = async () => {
+    if (selectedUser.isBlocked) await unblockContact(selectedUser._id);
+    else await blockContact(selectedUser._id);
+    setConfirmAction(null);
+  };
+
+  const handleClearChat = async () => {
+    await clearChat(selectedUser._id);
+    setConfirmAction(null);
+  };
 
   const menuItems = [
+    { label: "View profile", icon: "👤", action: () => setShowProfile(true) },
+    { label: "Search messages", icon: "🔍", action: () => toggleSearch() },
     {
-      label: "View profile",
-      icon: "👤",
-      action: () => toast("Profile view coming soon"),
+      label: selectedUser?.isBlocked ? "Unblock" : "Block",
+      icon: "🚫",
+      action: () => setConfirmAction("block"),
+      danger: !selectedUser?.isBlocked,
     },
-    {
-      label: "Search messages",
-      icon: "🔍",
-      action: () => {
-        setSearching(true);
-        setMenuOpen(false);
-      },
-    },
-    { label: "Mute notifications", icon: "🔕", action: () => toast("Muted") },
     {
       label: "Clear chat",
       icon: "🗑️",
-      action: () => toast("Clear chat coming soon"),
-    },
-    {
-      label: "Block",
-      icon: "🚫",
-      action: () => toast("Block coming soon"),
+      action: () => setConfirmAction("clear"),
       danger: true,
     },
   ];
@@ -1407,7 +1678,6 @@ function ChatHeader({ selectedUser, isOnline, isTyping, onClose }) {
           boxShadow: "0 2px 12px rgba(0,0,0,.25)",
         }}
       >
-        {/* Avatar + info */}
         <div
           style={{
             display: "flex",
@@ -1415,9 +1685,11 @@ function ChatHeader({ selectedUser, isOnline, isTyping, onClose }) {
             gap: 12,
             flex: 1,
             minWidth: 0,
+            cursor: "pointer",
           }}
+          onClick={() => setShowProfile(true)}
         >
-          <div style={{ position: "relative", cursor: "pointer" }}>
+          <div style={{ position: "relative" }}>
             <Avatar
               name={selectedUser?.fullName}
               src={selectedUser?.profilePic}
@@ -1444,21 +1716,22 @@ function ChatHeader({ selectedUser, isOnline, isTyping, onClose }) {
                 fontSize: 12,
                 marginTop: 1,
                 fontWeight: 500,
-                color: isTyping ? S.accent : isOnline ? S.online : S.text3,
-                display: "flex",
-                alignItems: "center",
-                gap: 4,
+                color: selectedUser?.isBlocked
+                  ? S.red
+                  : isTyping
+                    ? S.accent
+                    : isOnline
+                      ? S.online
+                      : S.text3,
               }}
             >
-              {isTyping ? (
-                <>
-                  <span style={{ marginLeft: 4 }}>typing…</span>
-                </>
-              ) : isOnline ? (
-                "● Online"
-              ) : (
-                "Offline"
-              )}
+              {selectedUser?.isBlocked
+                ? "🚫 Blocked"
+                : isTyping
+                  ? "typing…"
+                  : isOnline
+                    ? "● Online"
+                    : "Offline"}
             </div>
           </div>
         </div>
@@ -1471,10 +1744,9 @@ function ChatHeader({ selectedUser, isOnline, isTyping, onClose }) {
             flexShrink: 0,
           }}
         >
-          {/* Search toggle */}
           <ChatBtn
-            onClick={() => setSearching((v) => !v)}
-            active={searching}
+            onClick={() => toggleSearch()}
+            active={isSearchOpen}
             title="Search messages"
           >
             <svg
@@ -1491,8 +1763,7 @@ function ChatHeader({ selectedUser, isOnline, isTyping, onClose }) {
             </svg>
           </ChatBtn>
 
-          {/* Audio call */}
-          <ChatBtn onClick={() => setCalling("audio")} title="Voice call">
+          <ChatBtn onClick={() => startCall("audio")} title="Voice call">
             <svg
               width="17"
               height="17"
@@ -1507,8 +1778,7 @@ function ChatHeader({ selectedUser, isOnline, isTyping, onClose }) {
             </svg>
           </ChatBtn>
 
-          {/* Video call */}
-          <ChatBtn onClick={() => setCalling("video")} title="Video call">
+          <ChatBtn onClick={() => startCall("video")} title="Video call">
             <svg
               width="18"
               height="18"
@@ -1524,7 +1794,6 @@ function ChatHeader({ selectedUser, isOnline, isTyping, onClose }) {
             </svg>
           </ChatBtn>
 
-          {/* More options */}
           <div style={{ position: "relative" }} ref={menuRef}>
             <ChatBtn
               onClick={() => setMenuOpen((v) => !v)}
@@ -1543,7 +1812,6 @@ function ChatHeader({ selectedUser, isOnline, isTyping, onClose }) {
               </svg>
             </ChatBtn>
 
-            {/* Dropdown menu */}
             {menuOpen && (
               <div
                 style={{
@@ -1617,7 +1885,7 @@ function ChatHeader({ selectedUser, isOnline, isTyping, onClose }) {
         </div>
       </div>
 
-      {searching && (
+      {isSearchOpen && (
         <div
           style={{
             display: "flex",
@@ -1644,8 +1912,8 @@ function ChatHeader({ selectedUser, isOnline, isTyping, onClose }) {
           </svg>
           <input
             ref={searchRef}
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search in conversation…"
             style={{
               flex: 1,
@@ -1658,10 +1926,7 @@ function ChatHeader({ selectedUser, isOnline, isTyping, onClose }) {
             }}
           />
           <button
-            onClick={() => {
-              setSearching(false);
-              setSearchTerm("");
-            }}
+            onClick={closeSearch}
             style={{
               background: "transparent",
               border: "none",
@@ -1683,6 +1948,46 @@ function ChatHeader({ selectedUser, isOnline, isTyping, onClose }) {
           type={calling}
           isCaller={true}
           onEnd={() => setCalling(null)}
+        />
+      )}
+
+      {showProfile && (
+        <ProfileModal
+          user={selectedUser}
+          isOnline={isOnline}
+          onClose={() => setShowProfile(false)}
+          onBlockToggle={() => {
+            setShowProfile(false);
+            setConfirmAction("block");
+          }}
+        />
+      )}
+
+      {confirmAction === "block" && (
+        <ConfirmModal
+          title={
+            selectedUser?.isBlocked ? "Unblock contact?" : "Block contact?"
+          }
+          message={
+            selectedUser?.isBlocked
+              ? `${selectedUser?.fullName} will be able to message and call you again.`
+              : `${selectedUser?.fullName} won't be able to send you messages or call you. They won't be notified.`
+          }
+          confirmLabel={selectedUser?.isBlocked ? "Unblock" : "Block"}
+          danger={!selectedUser?.isBlocked}
+          onConfirm={handleBlockToggle}
+          onCancel={() => setConfirmAction(null)}
+        />
+      )}
+
+      {confirmAction === "clear" && (
+        <ConfirmModal
+          title="Clear this chat?"
+          message="All messages in this conversation will be permanently deleted for both of you. This cannot be undone."
+          confirmLabel="Clear chat"
+          danger
+          onConfirm={handleClearChat}
+          onCancel={() => setConfirmAction(null)}
         />
       )}
     </>
@@ -1884,92 +2189,108 @@ function CallOverlay({ user, type, isCaller, onEnd }) {
     return pc;
   };
 
- useEffect(() => {
-  if (!socket) return;
-  let cancelled = false;
+  useEffect(() => {
+    if (!socket) return;
+    let cancelled = false;
 
-  const startMedia = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        audio: true,
-        video: type === "video",
-      });
-
-      if (cancelled) {
-        stream.getTracks().forEach((t) => t.stop());
+    const startMedia = async () => {
+      if (!window.isSecureContext) {
+        toast.error(
+          "Calls need a secure connection. Open this app via https:// or localhost to use camera/mic.",
+          { duration: 6000 },
+        );
+        hangupRef.current(false);
+        return;
+      }
+      if (!navigator.mediaDevices?.getUserMedia) {
+        toast.error(
+          "Your browser doesn't support camera or microphone access.",
+        );
+        hangupRef.current(false);
         return;
       }
 
-      localStreamRef.current = stream;
-      if (localVideoRef.current) localVideoRef.current.srcObject = stream;
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          audio: true,
+          video: type === "video",
+        });
 
-      const pc = createPC(stream);
+        if (cancelled) {
+          stream.getTracks().forEach((t) => t.stop());
+          return;
+        }
 
-      if (isCaller) {
-        const offer = await pc.createOffer();
-        await pc.setLocalDescription(offer);
-        socket.emit("call:offer", { to: user._id, offer, type });
+        localStreamRef.current = stream;
+        if (localVideoRef.current) localVideoRef.current.srcObject = stream;
+
+        const pc = createPC(stream);
+
+        if (isCaller) {
+          const offer = await pc.createOffer();
+          await pc.setLocalDescription(offer);
+          socket.emit("call:offer", { to: user._id, offer, type });
+        }
+      } catch (err) {
+        if (cancelled) return;
+        console.error("Media error:", err);
+
+        if (err.name === "NotAllowedError") {
+          toast.error("Please allow microphone/camera access and try again.");
+        } else if (err.name === "NotFoundError") {
+          toast.error("No microphone or camera found on this device.");
+        } else {
+          toast.error("Could not start call: " + err.message);
+        }
+        hangupRef.current(false);
       }
-    } catch (err) {
-      if (cancelled) return;
-      console.error("Media error:", err);
+    };
 
-      if (err.name === "NotAllowedError") {
-        toast.error("Please allow microphone/camera access and try again.");
-      } else if (err.name === "NotFoundError") {
-        toast.error("No microphone or camera found on this device.");
-      } else {
-        toast.error("Could not start call: " + err.message);
-      }
-      hangupRef.current(false);
-    }
-  };
+    startMedia();
 
-  startMedia();
+    const onOffer = async ({ offer, from }) => {
+      const pc = pcRef.current;
+      if (!pc || isCaller) return;
+      await pc.setRemoteDescription(new RTCSessionDescription(offer));
+      const answer = await pc.createAnswer();
+      await pc.setLocalDescription(answer);
+      socket.emit("call:answer", { to: from, answer });
+    };
 
-  const onOffer = async ({ offer, from }) => {
-    const pc = pcRef.current;
-    if (!pc || isCaller) return;
-    await pc.setRemoteDescription(new RTCSessionDescription(offer));
-    const answer = await pc.createAnswer();
-    await pc.setLocalDescription(answer);
-    socket.emit("call:answer", { to: from, answer });
-  };
+    const onAnswer = async ({ answer }) => {
+      const pc = pcRef.current;
+      if (!pc) return;
+      await pc.setRemoteDescription(new RTCSessionDescription(answer));
+    };
 
-  const onAnswer = async ({ answer }) => {
-    const pc = pcRef.current;
-    if (!pc) return;
-    await pc.setRemoteDescription(new RTCSessionDescription(answer));
-  };
+    const onIce = async ({ candidate }) => {
+      const pc = pcRef.current;
+      if (!pc) return;
+      try {
+        await pc.addIceCandidate(new RTCIceCandidate(candidate));
+      } catch {}
+    };
 
-  const onIce = async ({ candidate }) => {
-    const pc = pcRef.current;
-    if (!pc) return;
-    try {
-      await pc.addIceCandidate(new RTCIceCandidate(candidate));
-    } catch {}
-  };
+    const onEnded = () => hangupRef.current(false);
 
-  const onEnded = () => hangupRef.current(false);
+    socket.on("call:offer", onOffer);
+    socket.on("call:answer", onAnswer);
+    socket.on("call:ice-candidate", onIce);
+    socket.on("call:ended", onEnded);
+    socket.on("call:rejected", onEnded);
 
-  socket.on("call:offer", onOffer);
-  socket.on("call:answer", onAnswer);
-  socket.on("call:ice-candidate", onIce);
-  socket.on("call:ended", onEnded);
-  socket.on("call:rejected", onEnded);
+    return () => {
+      cancelled = true;
+      socket.off("call:offer", onOffer);
+      socket.off("call:answer", onAnswer);
+      socket.off("call:ice-candidate", onIce);
+      socket.off("call:ended", onEnded);
+      socket.off("call:rejected", onEnded);
 
-  return () => {
-    cancelled = true;
-    socket.off("call:offer", onOffer);
-    socket.off("call:answer", onAnswer);
-    socket.off("call:ice-candidate", onIce);
-    socket.off("call:ended", onEnded);
-    socket.off("call:rejected", onEnded);
-    
-    localStreamRef.current?.getTracks().forEach((t) => t.stop());
-    pcRef.current?.close();
-  };
-}, [socket]);
+      localStreamRef.current?.getTracks().forEach((t) => t.stop());
+      pcRef.current?.close();
+    };
+  }, [socket]);
 
   useEffect(() => {
     if (status !== "connected") return;
@@ -1994,137 +2315,132 @@ function CallOverlay({ user, type, isCaller, onEnd }) {
   const isVideo = type === "video";
   const isConnected = status === "connected";
 
- 
- return (
-  <div
-    style={{
-      position: "fixed",
-      inset: 0,
-      zIndex: 200,
-      background: isVideo ? "#000" : "#111B21",
-      overflow: "hidden",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-    }}
-  >
-    {/* Voice Call Background */}
-    {!isVideo && (
-      <>
-        <div
-          style={{
-            position: "absolute",
-            inset: 0,
-            backgroundImage: user?.profilePic
-              ? `url(${user.profilePic})`
-              : "none",
-            backgroundSize: "cover",
-            backgroundPosition: "center",
-            filter: "blur(35px)",
-            transform: "scale(1.2)",
-            opacity: 0.4,
-          }}
-        />
-
-        <div
-          style={{
-            position: "absolute",
-            inset: 0,
-            background:
-              "linear-gradient(to bottom, rgba(0,0,0,.7), rgba(0,0,0,.85))",
-          }}
-        />
-      </>
-    )}
-
-    {/* Video Call Remote Stream */}
-    {isVideo && (
-      <>
-        <video
-          ref={remoteVideoRef}
-          autoPlay
-          playsInline
-          style={{
-            position: "absolute",
-            inset: 0,
-            width: "100%",
-            height: "100%",
-            objectFit: "cover",
-            zIndex: 0,
-            background: "#000",
-          }}
-        />
-
-        {/* Bottom Gradient */}
-        <div
-          style={{
-            position: "absolute",
-            left: 0,
-            right: 0,
-            bottom: 0,
-            height: 240,
-            background:
-              "linear-gradient(to top, rgba(0,0,0,.9), rgba(0,0,0,0))",
-            zIndex: 1,
-            pointerEvents: "none",
-          }}
-        />
-
-        {/* Local Video */}
-        <video
-          ref={localVideoRef}
-          autoPlay
-          playsInline
-          muted
-          style={{
-            position: "absolute",
-            top: 20,
-            right: 20,
-            width: 120,
-            height: 180,
-            borderRadius: 16,
-            objectFit: "cover",
-            zIndex: 5,
-            border: "2px solid rgba(255,255,255,.15)",
-            boxShadow: "0 8px 30px rgba(0,0,0,.5)",
-            background: "#222",
-          }}
-        />
-      </>
-    )}
-
-    {!isVideo && <audio ref={remoteVideoRef} autoPlay />}
-
-    {/* Contact Info */}
+  return (
     <div
       style={{
-        position: "relative",
-        zIndex: 4,
-        textAlign: "center",
-        display: isVideo && isConnected ? "none" : "flex",
-        flexDirection: "column",
+        position: "fixed",
+        inset: 0,
+        zIndex: 200,
+        background: isVideo ? "#000" : "#111B21",
+        overflow: "hidden",
+        display: "flex",
         alignItems: "center",
+        justifyContent: "center",
       }}
     >
+      {/* Voice Call Background */}
+      {!isVideo && (
+        <>
+          <div
+            style={{
+              position: "absolute",
+              inset: 0,
+              backgroundImage: user?.profilePic
+                ? `url(${user.profilePic})`
+                : "none",
+              backgroundSize: "cover",
+              backgroundPosition: "center",
+              filter: "blur(35px)",
+              transform: "scale(1.2)",
+              opacity: 0.4,
+            }}
+          />
+
+          <div
+            style={{
+              position: "absolute",
+              inset: 0,
+              background:
+                "linear-gradient(to bottom, rgba(0,0,0,.7), rgba(0,0,0,.85))",
+            }}
+          />
+        </>
+      )}
+
+      {/* Video Call Remote Stream */}
+      {isVideo && (
+        <>
+          <video
+            ref={remoteVideoRef}
+            autoPlay
+            playsInline
+            style={{
+              position: "absolute",
+              inset: 0,
+              width: "100%",
+              height: "100%",
+              objectFit: "cover",
+              zIndex: 0,
+              background: "#000",
+            }}
+          />
+
+          {/* Bottom Gradient */}
+          <div
+            style={{
+              position: "absolute",
+              left: 0,
+              right: 0,
+              bottom: 0,
+              height: 240,
+              background:
+                "linear-gradient(to top, rgba(0,0,0,.9), rgba(0,0,0,0))",
+              zIndex: 1,
+              pointerEvents: "none",
+            }}
+          />
+
+          {/* Local Video */}
+          <video
+            ref={localVideoRef}
+            autoPlay
+            playsInline
+            muted
+            style={{
+              position: "absolute",
+              top: 20,
+              right: 20,
+              width: 120,
+              height: 180,
+              borderRadius: 16,
+              objectFit: "cover",
+              zIndex: 5,
+              border: "2px solid rgba(255,255,255,.15)",
+              boxShadow: "0 8px 30px rgba(0,0,0,.5)",
+              background: "#222",
+            }}
+          />
+        </>
+      )}
+
+      {!isVideo && <audio ref={remoteVideoRef} autoPlay />}
+
+      {/* Contact Info */}
       <div
         style={{
-          width: 140,
-          height: 140,
-          borderRadius: "50%",
-          overflow: "hidden",
-          marginBottom: 24,
-          boxShadow: "0 10px 40px rgba(0,0,0,.4)",
-          animation: "_pulse 2s infinite",
+          position: "relative",
+          zIndex: 4,
+          textAlign: "center",
+          display: isVideo && isConnected ? "none" : "flex",
+          flexDirection: "column",
+          alignItems: "center",
         }}
       >
-        <Avatar
-          name={user?.fullName}
-          src={user?.profilePic}
-          size={140}
-        />
-      </div>
+        <div
+          style={{
+            width: 140,
+            height: 140,
+            borderRadius: "50%",
+            overflow: "hidden",
+            marginBottom: 24,
+            boxShadow: "0 10px 40px rgba(0,0,0,.4)",
+            animation: "_pulse 2s infinite",
+          }}
+        >
+          <Avatar name={user?.fullName} src={user?.profilePic} size={140} />
+        </div>
 
-      <style>{`
+        <style>{`
         @keyframes _pulse{
           0%,100%{
             transform:scale(1);
@@ -2135,171 +2451,167 @@ function CallOverlay({ user, type, isCaller, onEnd }) {
         }
       `}</style>
 
-      <div
-        style={{
-          fontSize: 32,
-          fontWeight: 700,
-          color: "#fff",
-          marginBottom: 8,
-        }}
-      >
-        {user?.fullName}
+        <div
+          style={{
+            fontSize: 32,
+            fontWeight: 700,
+            color: "#fff",
+            marginBottom: 8,
+          }}
+        >
+          {user?.fullName}
+        </div>
+
+        <div
+          style={{
+            fontSize: 16,
+            color: "#D1D5DB",
+            marginBottom: 8,
+          }}
+        >
+          {isConnected ? fmt(elapsed) : status}
+        </div>
+
+        <div
+          style={{
+            fontSize: 14,
+            color: "#AEBAC1",
+          }}
+        >
+          {isVideo ? "📹 Video Call" : "📞 Voice Call"}
+        </div>
       </div>
 
-      <div
-        style={{
-          fontSize: 16,
-          color: "#D1D5DB",
-          marginBottom: 8,
-        }}
-      >
-        {isConnected ? fmt(elapsed) : status}
-      </div>
+      {/* Video Timer */}
+      {isVideo && isConnected && (
+        <div
+          style={{
+            position: "absolute",
+            top: 30,
+            left: "50%",
+            transform: "translateX(-50%)",
+            zIndex: 6,
+            background: "rgba(0,0,0,.45)",
+            backdropFilter: "blur(12px)",
+            padding: "8px 18px",
+            borderRadius: 999,
+            color: "#fff",
+            fontWeight: 600,
+            fontSize: 14,
+          }}
+        >
+          {fmt(elapsed)}
+        </div>
+      )}
 
-      <div
-        style={{
-          fontSize: 14,
-          color: "#AEBAC1",
-        }}
-      >
-        {isVideo ? "📹 Video Call" : "📞 Voice Call"}
-      </div>
-    </div>
-
-    {/* Video Timer */}
-    {isVideo && isConnected && (
+      {/* Controls */}
       <div
         style={{
           position: "absolute",
-          top: 30,
+          bottom: 40,
           left: "50%",
           transform: "translateX(-50%)",
-          zIndex: 6,
-          background: "rgba(0,0,0,.45)",
-          backdropFilter: "blur(12px)",
-          padding: "8px 18px",
-          borderRadius: 999,
-          color: "#fff",
-          fontWeight: 600,
-          fontSize: 14,
+          zIndex: 10,
+          display: "flex",
+          alignItems: "center",
+          gap: 18,
         }}
       >
-        {fmt(elapsed)}
-      </div>
-    )}
+        {/* Mute */}
+        <CallCtrlBtn
+          active={muted}
+          onClick={toggleMute}
+          title={muted ? "Unmute" : "Mute"}
+        >
+          <div
+            style={{
+              width: 58,
+              height: 58,
+              borderRadius: "50%",
+              background: "rgba(255,255,255,.15)",
+              backdropFilter: "blur(12px)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            {muted ? "🔇" : "🎤"}
+          </div>
+        </CallCtrlBtn>
 
-    {/* Controls */}
-    <div
-      style={{
-        position: "absolute",
-        bottom: 40,
-        left: "50%",
-        transform: "translateX(-50%)",
-        zIndex: 10,
-        display: "flex",
-        alignItems: "center",
-        gap: 18,
-      }}
-    >
-      {/* Mute */}
-      <CallCtrlBtn
-        active={muted}
-        onClick={toggleMute}
-        title={muted ? "Unmute" : "Mute"}
-      >
-        <div
+        {/* Speaker */}
+        {!isVideo && (
+          <CallCtrlBtn
+            active={!speaker}
+            onClick={() => setSpeaker((v) => !v)}
+            title="Speaker"
+          >
+            <div
+              style={{
+                width: 58,
+                height: 58,
+                borderRadius: "50%",
+                background: "rgba(255,255,255,.15)",
+                backdropFilter: "blur(12px)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: 22,
+              }}
+            >
+              {speaker ? "🔊" : "🔈"}
+            </div>
+          </CallCtrlBtn>
+        )}
+
+        {/* Camera */}
+        {isVideo && (
+          <CallCtrlBtn active={camOff} onClick={toggleCam} title="Camera">
+            <div
+              style={{
+                width: 58,
+                height: 58,
+                borderRadius: "50%",
+                background: "rgba(255,255,255,.15)",
+                backdropFilter: "blur(12px)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: 22,
+              }}
+            >
+              {camOff ? "📷❌" : "📷"}
+            </div>
+          </CallCtrlBtn>
+        )}
+
+        {/* End Call */}
+        <button
+          onClick={() => hangup(true)}
           style={{
-            width: 58,
-            height: 58,
+            width: 72,
+            height: 72,
             borderRadius: "50%",
-            background: "rgba(255,255,255,.15)",
-            backdropFilter: "blur(12px)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
+            border: "none",
+            background: "#FF3B30",
+            color: "#fff",
+            cursor: "pointer",
+            fontSize: 26,
+            boxShadow: "0 8px 25px rgba(255,59,48,.45)",
+            transition: "all .2s ease",
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.transform = "scale(1.08)";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.transform = "scale(1)";
           }}
         >
-          {muted ? "🔇" : "🎤"}
-        </div>
-      </CallCtrlBtn>
-
-      {/* Speaker */}
-      {!isVideo && (
-        <CallCtrlBtn
-          active={!speaker}
-          onClick={() => setSpeaker((v) => !v)}
-          title="Speaker"
-        >
-          <div
-            style={{
-              width: 58,
-              height: 58,
-              borderRadius: "50%",
-              background: "rgba(255,255,255,.15)",
-              backdropFilter: "blur(12px)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontSize: 22,
-            }}
-          >
-            {speaker ? "🔊" : "🔈"}
-          </div>
-        </CallCtrlBtn>
-      )}
-
-      {/* Camera */}
-      {isVideo && (
-        <CallCtrlBtn
-          active={camOff}
-          onClick={toggleCam}
-          title="Camera"
-        >
-          <div
-            style={{
-              width: 58,
-              height: 58,
-              borderRadius: "50%",
-              background: "rgba(255,255,255,.15)",
-              backdropFilter: "blur(12px)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontSize: 22,
-            }}
-          >
-            {camOff ? "📷❌" : "📷"}
-          </div>
-        </CallCtrlBtn>
-      )}
-
-      {/* End Call */}
-      <button
-        onClick={() => hangup(true)}
-        style={{
-          width: 72,
-          height: 72,
-          borderRadius: "50%",
-          border: "none",
-          background: "#FF3B30",
-          color: "#fff",
-          cursor: "pointer",
-          fontSize: 26,
-          boxShadow: "0 8px 25px rgba(255,59,48,.45)",
-          transition: "all .2s ease",
-        }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.transform = "scale(1.08)";
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.transform = "scale(1)";
-        }}
-      >
-        📞
-      </button>
+          📞
+        </button>
+      </div>
     </div>
-  </div>
-);
+  );
 }
 function CallCtrlBtn({ onClick, active, title, children }) {
   return (
@@ -2469,6 +2781,8 @@ function ChatArea() {
     subscribeToMessage,
     unsubscribeFromMessage,
     typingUsers,
+    isSearchOpen,
+    searchQuery,
   } = useChatStore();
   const { authUser, onlineUsers } = useAuthStore();
   const bottomRef = useRef(null);
@@ -2581,6 +2895,8 @@ function ChatArea() {
               const nSender = messages[i + 1]?.senderId?.toString();
               const newGroup = pSender !== msg.senderId?.toString();
               const lastGrp = nSender !== msg.senderId?.toString();
+              const q = searchQuery.trim().toLowerCase();
+              const isMatch = !q || msg.text?.toLowerCase().includes(q);
               return (
                 <div
                   key={msg._id}
@@ -2618,7 +2934,11 @@ function ChatArea() {
                         : "18px 18px 18px 4px",
                       background: isMine ? S.sent : S.recv,
                       border: `1px solid ${isMine ? S.sentBorder : S.recvBorder}`,
-                      opacity: msg.isOptimistic ? 0.6 : 1,
+                      opacity: msg.isOptimistic
+                        ? 0.6
+                        : isSearchOpen && q && !isMatch
+                          ? 0.3
+                          : 1,
                       transition: "opacity .2s",
                       boxShadow: isMine
                         ? "0 2px 12px rgba(0,229,160,.12)"
@@ -2647,7 +2967,9 @@ function ChatArea() {
                           lineHeight: 1.55,
                         }}
                       >
-                        {msg.text}
+                        {isSearchOpen && q
+                          ? highlightMatch(msg.text, q)
+                          : msg.text}
                       </p>
                     )}
                     <div
@@ -2708,6 +3030,27 @@ function ChatArea() {
 
       <MessageInput />
     </div>
+  );
+}
+
+function highlightMatch(text, q) {
+  const idx = text.toLowerCase().indexOf(q);
+  if (idx === -1) return text;
+  return (
+    <>
+      {text.slice(0, idx)}
+      <mark
+        style={{
+          background: S.accent,
+          color: "#000",
+          borderRadius: 3,
+          padding: "0 1px",
+        }}
+      >
+        {text.slice(idx, idx + q.length)}
+      </mark>
+      {text.slice(idx + q.length)}
+    </>
   );
 }
 
