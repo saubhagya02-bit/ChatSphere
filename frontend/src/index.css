@@ -251,3 +251,11 @@ button {
 .anim-fade-in {
   animation: fadeIn 0.2s ease both;
 }
+
+/*  Chat search highlight  */
+.chat-highlight {
+  background: rgba(0, 229, 160, 0.35);
+  color: inherit;
+  border-radius: 3px;
+  padding: 0 1px;
+}
