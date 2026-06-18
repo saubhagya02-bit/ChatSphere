@@ -77,6 +77,26 @@ export const useAuthStore = create((set, get) => ({
     }
   },
 
+  blockUser: async (userId) => {
+    try {
+      const res = await axiosInstance.put(`/auth/block/${userId}`);
+      set({ authUser: res.data });
+      toast.success("Contact blocked");
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to block contact");
+    }
+  },
+
+  unblockUser: async (userId) => {
+    try {
+      const res = await axiosInstance.put(`/auth/unblock/${userId}`);
+      set({ authUser: res.data });
+      toast.success("Contact unblocked");
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to unblock contact");
+    }
+  },
+
   connectSocket: () => {
     const { authUser } = get();
     if (!authUser || get().socket?.connected) return;
