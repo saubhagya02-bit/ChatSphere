@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useChatStore } from "../store/useChatStore";
 import { useAuthStore } from "../store/useAuthStore";
 import ChatHeader from "./ChatHeader";
@@ -14,9 +14,15 @@ function ChatContainer() {
     getMessagesByUserId,
     subscribeToMessage,
     unsubscribeFromMessage,
+    isSearchOpen,
+    searchQuery,
+    setSearchQuery,
+    closeSearch,
   } = useChatStore();
   const { authUser } = useAuthStore();
   const bottomRef = useRef(null);
+  const messageRefs = useRef({});
+  const [matchIndex, setMatchIndex] = useState(0);
 
   useEffect(() => {
     getMessagesByUserId(selectedUser._id);
@@ -33,6 +39,34 @@ function ChatContainer() {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  const matches = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return [];
+    return messages
+      .filter((m) => m.text?.toLowerCase().includes(q))
+      .map((m) => m._id);
+  }, [messages, searchQuery]);
+
+  useEffect(() => {
+    setMatchIndex(0);
+  }, [searchQuery]);
+
+  useEffect(() => {
+    if (matches.length === 0) return;
+    const id = matches[matchIndex] ?? matches[0];
+    messageRefs.current[id]?.scrollIntoView({
+      behavior: "smooth",
+      block: "center",
+    });
+  }, [matchIndex, matches]);
+
+  const goPrevMatch = () =>
+    setMatchIndex((i) =>
+      matches.length ? (i - 1 + matches.length) % matches.length : 0,
+    );
+  const goNextMatch = () =>
+    setMatchIndex((i) => (matches.length ? (i + 1) % matches.length : 0));
+
   return (
     <div
       style={{
@@ -43,6 +77,93 @@ function ChatContainer() {
       }}
     >
       <ChatHeader />
+
+      {isSearchOpen && (
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "10px",
+            padding: "10px 20px",
+            borderBottom: "1px solid var(--border)",
+            background: "var(--bg2)",
+            flexShrink: 0,
+          }}
+        >
+          <svg
+            width="15"
+            height="15"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="var(--text3)"
+            strokeWidth="2"
+            strokeLinecap="round"
+          >
+            <circle cx="11" cy="11" r="8" />
+            <path d="M21 21l-4.35-4.35" />
+          </svg>
+          <input
+            autoFocus
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search in this chat…"
+            style={{
+              flex: 1,
+              background: "transparent",
+              border: "none",
+              outline: "none",
+              fontSize: "13px",
+              color: "var(--text1)",
+              fontFamily: "'DM Sans', sans-serif",
+            }}
+          />
+          {searchQuery && (
+            <span
+              style={{
+                fontSize: "12px",
+                color: "var(--text3)",
+                whiteSpace: "nowrap",
+              }}
+            >
+              {matches.length
+                ? `${matchIndex + 1}/${matches.length}`
+                : "No results"}
+            </span>
+          )}
+          <button
+            className="icon-btn"
+            title="Previous match"
+            onClick={goPrevMatch}
+            disabled={!matches.length}
+            style={{ opacity: matches.length ? 1 : 0.4 }}
+          >
+            <svg viewBox="0 0 24 24">
+              <polyline points="18 15 12 9 6 15" />
+            </svg>
+          </button>
+          <button
+            className="icon-btn"
+            title="Next match"
+            onClick={goNextMatch}
+            disabled={!matches.length}
+            style={{ opacity: matches.length ? 1 : 0.4 }}
+          >
+            <svg viewBox="0 0 24 24">
+              <polyline points="6 9 12 15 18 9" />
+            </svg>
+          </button>
+          <button
+            className="icon-btn"
+            title="Close search"
+            onClick={closeSearch}
+          >
+            <svg viewBox="0 0 24 24">
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+          </button>
+        </div>
+      )}
 
       <div
         style={{
@@ -67,10 +188,13 @@ function ChatContainer() {
               const isNewGroup =
                 !prevMsg ||
                 prevMsg.senderId.toString() !== msg.senderId.toString();
+              const isActiveMatch =
+                isSearchOpen && matches[matchIndex] === msg._id;
 
               return (
                 <div
                   key={msg._id}
+                  ref={(el) => (messageRefs.current[msg._id] = el)}
                   style={{
                     display: "flex",
                     flexDirection: isMine ? "row-reverse" : "row",
@@ -82,7 +206,6 @@ function ChatContainer() {
                   }}
                   className="anim-fade-up"
                 >
-                  {/* Avatar — only show on first message in a group */}
                   <div
                     style={{
                       width: 28,
@@ -117,10 +240,15 @@ function ChatContainer() {
                         ? "18px 18px 4px 18px"
                         : "18px 18px 18px 4px",
                       background: isMine ? "var(--sent)" : "var(--recv)",
-                      border: `1px solid ${isMine ? "var(--sent-border)" : "var(--recv-border)"}`,
+                      border: isActiveMatch
+                        ? "1px solid var(--accent)"
+                        : `1px solid ${isMine ? "var(--sent-border)" : "var(--recv-border)"}`,
+                      boxShadow: isActiveMatch
+                        ? "0 0 0 2px rgba(0,229,160,.25)"
+                        : "none",
                       wordBreak: "break-word",
                       opacity: msg.isOptimistic ? 0.7 : 1,
-                      transition: "opacity .2s",
+                      transition: "opacity .2s, box-shadow .2s",
                     }}
                   >
                     {msg.image && (
@@ -145,7 +273,9 @@ function ChatContainer() {
                           lineHeight: 1.55,
                         }}
                       >
-                        {msg.text}
+                        {isSearchOpen && searchQuery.trim()
+                          ? highlightMatch(msg.text, searchQuery)
+                          : msg.text}
                       </p>
                     )}
                     <div
@@ -184,6 +314,29 @@ function ChatContainer() {
 
       <MessageInput />
     </div>
+  );
+}
+
+function highlightMatch(text, query) {
+  const q = query.trim();
+  if (!q) return text;
+  const idx = text.toLowerCase().indexOf(q.toLowerCase());
+  if (idx === -1) return text;
+  return (
+    <>
+      {text.slice(0, idx)}
+      <mark
+        style={{
+          background: "var(--accent)",
+          color: "#000",
+          borderRadius: "3px",
+          padding: "0 1px",
+        }}
+      >
+        {text.slice(idx, idx + q.length)}
+      </mark>
+      {text.slice(idx + q.length)}
+    </>
   );
 }
 
