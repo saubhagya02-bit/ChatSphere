@@ -41,3 +41,10 @@ export function initials(name = "") {
     .map((w) => w[0]?.toUpperCase() ?? "")
     .join("");
 }
+
+export function isUserBlocked(authUser, userId) {
+  if (!authUser?.blockedUsers || !userId) return false;
+  return authUser.blockedUsers.some(
+    (id) => id?.toString() === userId.toString(),
+  );
+}
