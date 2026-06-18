@@ -16,10 +16,11 @@ export const useChatStore = create((set, get) => ({
   isSoundEnabled: JSON.parse(localStorage.getItem("isSoundEnabled")) !== false,
 
   unreadMessages: {},
-
   lastMessages: {},
-
   typingUsers: new Set(),
+
+  isSearchOpen: false,
+  searchQuery: "",
 
   // Call history
   callHistory: [],
@@ -45,19 +46,32 @@ export const useChatStore = create((set, get) => ({
 
   setActiveTab: (tab) => set({ activeTab: tab }),
 
+  toggleSearch: () =>
+    set((s) => ({
+      isSearchOpen: !s.isSearchOpen,
+      searchQuery: s.isSearchOpen ? "" : s.searchQuery,
+    })),
+
+  closeSearch: () => set({ isSearchOpen: false, searchQuery: "" }),
+
+  setSearchQuery: (q) => set({ searchQuery: q }),
+
   setSelectedUser: (user) => {
     if (!user) {
-      set({ selectedUser: null });
+      set({ selectedUser: null, isSearchOpen: false, searchQuery: "" });
       return;
     }
-
     const socket = useAuthStore.getState().socket;
     if (socket) socket.emit("msg:seen", { senderId: user._id });
-
     set((state) => {
       const updated = { ...state.unreadMessages };
       delete updated[user._id];
-      return { selectedUser: user, unreadMessages: updated };
+      return {
+        selectedUser: user,
+        unreadMessages: updated,
+        isSearchOpen: false,
+        searchQuery: "",
+      };
     });
   },
 
@@ -94,7 +108,6 @@ export const useChatStore = create((set, get) => ({
       const socket = useAuthStore.getState().socket;
       if (socket) socket.emit("msg:seen", { senderId: userId });
 
-      // Set last message preview from history
       if (res.data.length > 0) {
         const last = res.data[res.data.length - 1];
         set((s) => ({
@@ -159,11 +172,65 @@ export const useChatStore = create((set, get) => ({
     }
   },
 
+  blockContact: async (userId) => {
+    try {
+      await axiosInstance.put(`/messages/block/${userId}`);
+      set((s) => ({
+        selectedUser:
+          s.selectedUser?._id === userId
+            ? { ...s.selectedUser, isBlocked: true }
+            : s.selectedUser,
+        allContacts: s.allContacts.map((c) =>
+          c._id === userId ? { ...c, isBlocked: true } : c,
+        ),
+        chats: s.chats.map((c) =>
+          c._id === userId ? { ...c, isBlocked: true } : c,
+        ),
+      }));
+      toast.success("Contact blocked");
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to block contact");
+    }
+  },
+
+  unblockContact: async (userId) => {
+    try {
+      await axiosInstance.put(`/messages/unblock/${userId}`);
+      set((s) => ({
+        selectedUser:
+          s.selectedUser?._id === userId
+            ? { ...s.selectedUser, isBlocked: false }
+            : s.selectedUser,
+        allContacts: s.allContacts.map((c) =>
+          c._id === userId ? { ...c, isBlocked: false } : c,
+        ),
+        chats: s.chats.map((c) =>
+          c._id === userId ? { ...c, isBlocked: false } : c,
+        ),
+      }));
+      toast.success("Contact unblocked");
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to unblock contact");
+    }
+  },
+
+  clearChat: async (userId) => {
+    try {
+      await axiosInstance.delete(`/messages/clear/${userId}`);
+      set((s) => ({
+        messages: s.selectedUser?._id === userId ? [] : s.messages,
+        lastMessages: { ...s.lastMessages, [userId]: "" },
+      }));
+      toast.success("Chat cleared");
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to clear chat");
+    }
+  },
+
   subscribeToMessage: () => {
     const socket = useAuthStore.getState().socket;
     if (!socket) return;
 
-    // New message
     socket.on("newMessage", (msg) => {
       const { selectedUser, isSoundEnabled } = get();
 
@@ -182,14 +249,12 @@ export const useChatStore = create((set, get) => ({
         }
       }
 
-      // Update last message preview for the sender's row in the sidebar
       const previewText = msg.image ? "📷 Photo" : msg.text || "";
       set((s) => ({
         lastMessages: {
           ...s.lastMessages,
           [msg.senderId]: previewText,
         },
-        // Sort chats: move the sender to the top
         chats: (() => {
           const chats = [...s.chats];
           const idx = chats.findIndex((c) => sameId(c._id, msg.senderId));
@@ -200,7 +265,6 @@ export const useChatStore = create((set, get) => ({
         })(),
       }));
 
-      // Unread count — only if this conversation is NOT open
       if (!isFromSelectedUser) {
         set((s) => ({
           unreadMessages: {
