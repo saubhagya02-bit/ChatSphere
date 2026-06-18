@@ -40,6 +40,7 @@ export const signup = async (req, res) => {
       fullName: user.fullName,
       email: user.email,
       profilePic: user.profilePic,
+      blockedUsers: user.blockedUsers,
     });
   } catch (err) {
     console.error("signup:", err);
@@ -63,6 +64,7 @@ export const login = async (req, res) => {
       fullName: user.fullName,
       email: user.email,
       profilePic: user.profilePic,
+      blockedUsers: user.blockedUsers,
     });
   } catch (err) {
     console.error("login:", err);
@@ -94,6 +96,48 @@ export const updateProfile = async (req, res) => {
     res.status(200).json(updated);
   } catch (err) {
     console.error("updateProfile:", err);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+export const blockUser = async (req, res) => {
+  try {
+    const myId = req.user._id;
+    const { id: targetId } = req.params;
+
+    if (myId.equals(targetId))
+      return res.status(400).json({ message: "You can't block yourself" });
+
+    if (!(await User.exists({ _id: targetId })))
+      return res.status(404).json({ message: "User not found" });
+
+    const updated = await User.findByIdAndUpdate(
+      myId,
+      { $addToSet: { blockedUsers: targetId } },
+      { new: true },
+    ).select("-password");
+
+    res.status(200).json(updated);
+  } catch (err) {
+    console.error("blockUser:", err);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+export const unblockUser = async (req, res) => {
+  try {
+    const myId = req.user._id;
+    const { id: targetId } = req.params;
+
+    const updated = await User.findByIdAndUpdate(
+      myId,
+      { $pull: { blockedUsers: targetId } },
+      { new: true },
+    ).select("-password");
+
+    res.status(200).json(updated);
+  } catch (err) {
+    console.error("unblockUser:", err);
     res.status(500).json({ message: "Internal server error" });
   }
 };
