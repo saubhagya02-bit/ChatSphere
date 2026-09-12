@@ -107,12 +107,6 @@ The project was built to demonstrate production-grade patterns across the full s
 - Socket.io (messaging, presence, typing, call signaling)
 - WebRTC (peer-to-peer audio/video transport, STUN-based NAT traversal)
 
-**Infrastructure**
-- Frontend deployed on Vercel
-- Backend deployed on Render
-- Database hosted on MongoDB Atlas
-- Containerized with Docker for local development parity
-
 ---
 
 ## Architecture
