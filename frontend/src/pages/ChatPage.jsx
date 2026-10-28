@@ -500,6 +500,122 @@ function EmptyList({ tab, onSwitch }) {
   );
 }
 
+function HighlightedText({ text = "", query }) {
+  const idx = text.toLowerCase().indexOf(query.toLowerCase());
+  if (idx === -1) return text;
+  return (
+    <>
+      {text.slice(0, idx)}
+      <mark
+        style={{
+          background: S.accent,
+          color: "#000",
+          borderRadius: 3,
+          padding: "0 1px",
+        }}
+      >
+        {text.slice(idx, idx + query.length)}
+      </mark>
+      {text.slice(idx + query.length)}
+    </>
+  );
+}
+
+function MessageSearchResults({ query, onOpen }) {
+  const { searchResults, isMessageSearching } = useChatStore();
+
+  return (
+    <div style={{ marginTop: 8 }}>
+      <div
+        style={{
+          padding: "8px 12px 6px",
+          fontSize: 11,
+          fontWeight: 600,
+          color: S.text3,
+          textTransform: "uppercase",
+          letterSpacing: ".06em",
+        }}
+      >
+        Messages
+      </div>
+
+      {searchResults.length === 0 ? (
+        <p
+          style={{
+            padding: "8px 12px",
+            fontSize: 12,
+            color: S.text3,
+            margin: 0,
+          }}
+        >
+          {isMessageSearching ? "Searching…" : "No messages found"}
+        </p>
+      ) : (
+        searchResults.map((r) => (
+          <div
+            key={r._id}
+            onClick={() => onOpen(r.peer)}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 11,
+              padding: "9px 10px",
+              borderRadius: 14,
+              cursor: "pointer",
+              transition: "background .15s",
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.background = S.bg3)}
+            onMouseLeave={(e) =>
+              (e.currentTarget.style.background = "transparent")
+            }
+          >
+            <Avatar name={r.peer.fullName} src={r.peer.profilePic} size={38} />
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "baseline",
+                  gap: 8,
+                }}
+              >
+                <span
+                  style={{
+                    fontSize: 13,
+                    fontWeight: 600,
+                    color: S.text1,
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                  }}
+                >
+                  {r.peer.fullName}
+                </span>
+                <span style={{ fontSize: 10, color: S.text3, flexShrink: 0 }}>
+                  {formatMessageTime(r.createdAt)}
+                </span>
+              </div>
+              <div
+                style={{
+                  fontSize: 12,
+                  color: S.text2,
+                  marginTop: 2,
+                  whiteSpace: "nowrap",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                }}
+              >
+                {r.isMine && <span style={{ color: S.text3 }}>You: </span>}
+                <HighlightedText text={r.text} query={query} />
+              </div>
+            </div>
+          </div>
+        ))
+      )}
+    </div>
+  );
+}
+
 function Sidebar({ search, setSearch }) {
   const { authUser, logout, uploadProfile, onlineUsers } = useAuthStore();
   const {
@@ -514,6 +630,8 @@ function Sidebar({ search, setSearch }) {
     isUsersLoading,
     getMyChatPartner,
     getAllContacts,
+    searchAllMessages,
+    clearMessageSearch,
   } = useChatStore();
   const { playClick } = useKeyboardSound();
   const [uploading, setUploading] = useState(false);
@@ -522,6 +640,29 @@ function Sidebar({ search, setSearch }) {
     if (activeTab === "chats") getMyChatPartner();
     else if (activeTab === "contacts") getAllContacts();
   }, [activeTab]);
+
+  const isMessageSearchActive = search.trim().length >= 2;
+
+  // Debounced server-side message search
+  useEffect(() => {
+    const q = search.trim();
+    if (q.length < 2) {
+      clearMessageSearch();
+      return;
+    }
+    const t = setTimeout(() => searchAllMessages(q), 300);
+    return () => clearTimeout(t);
+  }, [search]);
+
+  const openFromSearch = (peer) => {
+    const fullUser =
+      [...chats, ...allContacts].find((u) => u._id === peer._id) || peer;
+    const q = search.trim();
+    setSelectedUser(fullUser);
+    setActiveTab("chats");
+    // reuse the in-chat search so the matching text is highlighted on open
+    useChatStore.setState({ isSearchOpen: true, searchQuery: q });
+  };
 
   const handlePhotoUpload = () => {
     const inp = document.createElement("input");
@@ -773,28 +914,39 @@ function Sidebar({ search, setSearch }) {
           <CallHistoryPanel />
         ) : isUsersLoading ? (
           <SkeletonUserList />
-        ) : filtered.length === 0 ? (
-          <EmptyList
-            tab={activeTab}
-            onSwitch={() => setActiveTab("contacts")}
-          />
         ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: 1 }}>
-            {filtered.map((user) => (
-              <UserRow
-                key={user._id}
-                user={user}
-                selected={selectedUser?._id === user._id}
-                online={onlineUsers.includes(user._id)}
-                showMsgBtn={activeTab === "contacts"}
-                onClick={() => setSelectedUser(user)}
-                onMessage={() => {
-                  setSelectedUser(user);
-                  setActiveTab("chats");
-                }}
+          <>
+            {filtered.length === 0 && !isMessageSearchActive ? (
+              <EmptyList
+                tab={activeTab}
+                onSwitch={() => setActiveTab("contacts")}
               />
-            ))}
-          </div>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: 1 }}>
+                {filtered.map((user) => (
+                  <UserRow
+                    key={user._id}
+                    user={user}
+                    selected={selectedUser?._id === user._id}
+                    online={onlineUsers.includes(user._id)}
+                    showMsgBtn={activeTab === "contacts"}
+                    onClick={() => setSelectedUser(user)}
+                    onMessage={() => {
+                      setSelectedUser(user);
+                      setActiveTab("chats");
+                    }}
+                  />
+                ))}
+              </div>
+            )}
+
+            {isMessageSearchActive && (
+              <MessageSearchResults
+                query={search.trim()}
+                onOpen={openFromSearch}
+              />
+            )}
+          </>
         )}
       </div>
     </aside>
