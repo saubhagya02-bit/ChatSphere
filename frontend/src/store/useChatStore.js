@@ -4,6 +4,7 @@ import toast from "react-hot-toast";
 import { useAuthStore } from "./useAuthStore";
 
 const sameId = (a, b) => a?.toString() === b?.toString();
+let latestSearchId = 0;
 
 export const useChatStore = create((set, get) => ({
   allContacts: [],
@@ -332,5 +333,29 @@ export const useChatStore = create((set, get) => ({
     if (socket && selectedUser) {
       socket.emit("stopTyping", { receiverId: selectedUser._id });
     }
+  },
+
+  searchResults: [],
+  isMessageSearching: false,
+
+  searchAllMessages: async (q) => {
+    const requestId = ++latestSearchId;
+    set({ isMessageSearching: true });
+    try {
+      const res = await axiosInstance.get("/messages/search", {
+        params: { q },
+      });
+      if (requestId === latestSearchId) set({ searchResults: res.data });
+    } catch (err) {
+      if (requestId === latestSearchId)
+        toast.error(err.response?.data?.message || "Search failed");
+    } finally {
+      if (requestId === latestSearchId) set({ isMessageSearching: false });
+    }
+  },
+
+  clearMessageSearch: () => {
+    latestSearchId++;
+    set({ searchResults: [], isMessageSearching: false });
   },
 }));

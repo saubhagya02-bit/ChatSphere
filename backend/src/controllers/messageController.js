@@ -2,6 +2,7 @@ import Message from "../models/message.js";
 import User from "../models/User.js";
 import cloudinary from "../lib/cloudinary.js";
 import { getReceiverSocketId, io } from "../lib/socket.js";
+import { escapeRegex } from "../lib/utils.js";
 
 export const getAllContacts = async (req, res) => {
   try {
@@ -64,12 +65,9 @@ export const sendMessage = async (req, res) => {
       (id) => id.toString() === receiverId,
     );
     if (iBlockedThem)
-      return res
-        .status(403)
-        .json({
-          message:
-            "You have blocked this user. Unblock them to send a message.",
-        });
+      return res.status(403).json({
+        message: "You have blocked this user. Unblock them to send a message.",
+      });
 
     const theyBlockedMe = (receiver.blockedUsers || []).some(
       (id) => id.toString() === senderId.toString(),
@@ -183,6 +181,62 @@ export const unblockUser = async (req, res) => {
       .json({ message: "User unblocked", unblockedUserId: targetId });
   } catch (err) {
     console.error("unblockUser:", err);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+const SEARCH_MIN_LENGTH = 2;
+const SEARCH_MAX_LENGTH = 100;
+const SEARCH_RESULT_LIMIT = 30;
+
+export const searchMessages = async (req, res) => {
+  try {
+    const myId = req.user._id.toString();
+    const q = String(req.query.q || "").trim();
+
+    if (q.length < SEARCH_MIN_LENGTH)
+      return res
+        .status(400)
+        .json({
+          message: `Search term must be at least ${SEARCH_MIN_LENGTH} characters`,
+        });
+    if (q.length > SEARCH_MAX_LENGTH)
+      return res.status(400).json({ message: "Search term is too long" });
+
+    const msgs = await Message.find({
+      $or: [{ senderId: req.user._id }, { receiverId: req.user._id }],
+      text: new RegExp(escapeRegex(q), "i"),
+    })
+      .sort({ createdAt: -1 })
+      .limit(SEARCH_RESULT_LIMIT)
+      .lean();
+
+    const peerIdOf = (m) =>
+      m.senderId.toString() === myId
+        ? m.receiverId.toString()
+        : m.senderId.toString();
+
+    const peerIds = [...new Set(msgs.map(peerIdOf))];
+    const peers = await User.find({ _id: { $in: peerIds } })
+      .select("fullName profilePic")
+      .lean();
+    const peerMap = Object.fromEntries(peers.map((p) => [p._id.toString(), p]));
+
+    const results = msgs.map((m) => ({
+      _id: m._id,
+      text: m.text,
+      createdAt: m.createdAt,
+      isMine: m.senderId.toString() === myId,
+      peer: peerMap[peerIdOf(m)] || {
+        _id: peerIdOf(m),
+        fullName: "Unknown",
+        profilePic: "",
+      },
+    }));
+
+    res.status(200).json(results);
+  } catch (err) {
+    console.error("searchMessages:", err);
     res.status(500).json({ message: "Internal server error" });
   }
 };

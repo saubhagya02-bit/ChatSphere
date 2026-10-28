@@ -2,6 +2,7 @@ import express from "express";
 import {
   getAllContacts,
   getMessagesByUserId,
+  searchMessages,
   sendMessage,
   getChatPartners,
   clearMessages,
@@ -17,6 +18,7 @@ router.use(arcjetProtection, protectRoute);
 
 router.get("/contacts", getAllContacts);
 router.get("/chats", getChatPartners);
+router.get("/search", searchMessages);
 router.put("/block/:id", blockUser);
 router.put("/unblock/:id", unblockUser);
 router.delete("/clear/:id", clearMessages);
