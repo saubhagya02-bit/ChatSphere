@@ -18,3 +18,5 @@ export const generateToken = (userId, res) => {
   });
   return token;
 };
+
+export const escapeRegex = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
