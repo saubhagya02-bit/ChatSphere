@@ -26,6 +26,7 @@ The project was built to demonstrate production-grade patterns across the full s
 - "Seen" receipts that update live when the recipient opens the conversation
 - Typing indicators (animated dots, live `typing` / `stopTyping` socket events)
 - In-conversation message search with match highlighting and next/previous navigation
+- Server-side message search across all conversations, with matching results displayed in the sidebar, highlighted search terms, and direct navigation to the relevant chat
 - 200-character message limit with live character counter
 - Last-message preview and automatic chat reordering (most recent conversation surfaces to the top)
 - Unread message badges per contact, cleared automatically when a chat is opened
@@ -203,6 +204,7 @@ chatsphere/
 | GET | `/contacts` | Get all users except the current one | Yes |
 | GET | `/chats` | Get users you've previously exchanged messages with | Yes |
 | GET | `/:id` | Get message history with a specific user | Yes |
+| GET | `/search?q=` | Search message text across the authenticated user's conversations (maximum 30 results) | Yes |
 | POST | `/send/:id` | Send a text and/or image message | Yes |
 | DELETE | `/clear/:id` | Clear all messages with a specific user | Yes |
 | PUT | `/block/:id` | Block a contact | Yes |
@@ -264,7 +266,6 @@ chatsphere/
 - Message reactions and replies/threads
 - Push notifications for offline users
 - Read receipts at the individual-message level for group chats
-- Server-side full-text message search across all conversations
 - End-to-end encryption for message content
 
 ---
